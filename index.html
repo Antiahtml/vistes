@@ -1,0 +1,1585 @@
+<!doctype html>
+<html lang="ca">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Generador de fitxes de vistes</title>
+<style>
+:root{
+  --bg:#f6f1e7; --panel:#fffdf8; --ink:#2d2a26; --muted:#7a7268; --line:#e4dccd;
+  --accent:#a8402c; --accent-2:#d9774f; --accent-soft:#f6e3d9; --ok:#2f7d4f; --danger:#b3261e;
+  --radius:10px; --shadow:0 1px 2px rgba(60,40,20,.06),0 4px 14px rgba(60,40,20,.06);
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{background:var(--bg);color:var(--ink);font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+h2{font-size:18px;margin:0 0 12px}
+h3{font-size:15px;margin:0 0 8px}
+.muted{color:var(--muted)}
+.small{font-size:12px}
+
+/* ---------- header ---------- */
+#app-header{display:flex;align-items:center;gap:16px;padding:10px 18px;background:var(--panel);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:20;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:16px;white-space:nowrap}
+.brand-logo{width:30px;height:30px}
+#tabs{display:flex;gap:4px;flex-wrap:wrap}
+#tabs button{border:0;background:transparent;padding:7px 12px;border-radius:8px;color:var(--muted);font-weight:600}
+#tabs button.on{background:var(--accent-soft);color:var(--accent)}
+#tabs button:hover:not(.on){background:#f1ebe0}
+.hdr-right{margin-left:auto;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.hdr-right label{display:flex;gap:6px;align-items:center;color:var(--muted);font-size:12px}
+
+/* ---------- generic controls ---------- */
+.btn{border:1px solid var(--line);background:var(--panel);padding:7px 12px;border-radius:8px;font-weight:600;display:inline-flex;gap:6px;align-items:center;white-space:nowrap}
+.btn:hover{border-color:#cfc3ae}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.primary:hover{background:#923522}
+.btn.ghost{border-color:transparent;background:transparent}
+.btn.danger{color:var(--danger)}
+.btn.sm{padding:4px 8px;font-size:12px}
+.btn.on{background:var(--accent-soft);border-color:var(--accent);color:var(--accent)}
+.btn:disabled{opacity:.45;cursor:default}
+input[type=text],input[type=number],input[type=date],select,textarea{border:1px solid var(--line);background:#fff;border-radius:7px;padding:6px 8px;width:100%}
+textarea{resize:vertical;min-height:54px}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--accent-2);outline-offset:-1px;border-color:transparent}
+.field{display:flex;flex-direction:column;gap:4px;margin-bottom:10px}
+.field>span{font-size:12px;font-weight:600;color:var(--muted)}
+.row{display:flex;gap:10px}
+.row>*{flex:1;min-width:0}
+.check{display:flex;gap:8px;align-items:center;margin:6px 0}
+.check input{width:auto}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
+
+main{padding:18px}
+.tab{display:none}
+.tab.on{display:block}
+.toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:14px}
+.empty{padding:40px;text-align:center;color:var(--muted)}
+
+/* ---------- lists ---------- */
+.grid-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:14px}
+.pcard{padding:10px;display:flex;flex-direction:column;gap:8px}
+.pcard .thumb{height:140px;display:flex;align-items:center;justify-content:center;background:#fbf8f1;border-radius:8px}
+.pcard .thumb svg{max-width:100%;max-height:100%}
+.pcard .meta{display:flex;justify-content:space-between;gap:6px;align-items:center}
+.pcard .name{font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pcard .actions{display:flex;gap:4px;flex-wrap:wrap}
+.badge{font-size:11px;font-weight:700;padding:2px 7px;border-radius:20px;background:#efe8da;color:var(--muted);white-space:nowrap}
+.badge.exam{background:#f6e3d9;color:var(--accent)}
+.badge.l1{background:#e3f1e6;color:var(--ok)}
+.badge.l2{background:#fdf0d5;color:#9a6b00}
+.badge.l3{background:#f9dedb;color:var(--danger)}
+.dcard{padding:14px;display:flex;flex-direction:column;gap:8px}
+.dcard .title{font-weight:700;font-size:15px}
+
+/* ---------- piece editor ---------- */
+#editor{display:none;grid-template-columns:230px 1fr 300px;gap:14px;height:calc(100vh - 100px);min-height:520px}
+#editor.on{display:grid}
+.ed-side{padding:12px;overflow:auto}
+.ed-tools{display:flex;flex-direction:column;gap:6px}
+.ed-tools .btn{justify-content:flex-start}
+#ed-canvas-wrap{position:relative;overflow:hidden;padding:0}
+#ed-canvas{position:absolute;inset:0}
+#ed-hint{position:absolute;left:12px;bottom:10px;right:12px;background:rgba(255,253,248,.92);border:1px solid var(--line);border-radius:8px;padding:6px 10px;font-size:12px;color:var(--muted);pointer-events:none}
+#ed-cutpanel{position:absolute;top:12px;left:12px;width:270px;padding:12px;display:none}
+#ed-cutpanel.on{display:block}
+.boxin{display:grid;grid-template-columns:24px 1fr 1fr;gap:4px 6px;align-items:center;margin:6px 0 10px;font-size:12px}
+.boxin input{padding:3px 5px}
+.views-mini{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.views-mini figure{margin:0;background:#fbf8f1;border-radius:8px;padding:6px;display:flex;flex-direction:column;align-items:center;gap:2px}
+.views-mini figure.wide{grid-column:span 2}
+.views-mini svg{width:100%;height:110px}
+.views-mini figure.wide svg{height:170px}
+.views-mini figcaption{font-size:11px;color:var(--muted);font-weight:600}
+.cutlist{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:4px}
+.cutlist li{display:flex;justify-content:space-between;align-items:center;background:#fbf8f1;border-radius:6px;padding:3px 4px 3px 8px;font-size:12px}
+hr.sep{border:0;border-top:1px solid var(--line);margin:12px 0}
+
+/* ---------- doc editor ---------- */
+#doc-editor{display:grid;grid-template-columns:430px 1fr;gap:16px;align-items:start}
+#doc-form{padding:14px;max-height:calc(100vh - 100px);overflow:auto;position:sticky;top:76px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{border:0;background:#fff;padding:6px 12px;font-weight:600;color:var(--muted)}
+.seg button.on{background:var(--accent);color:#fff}
+.excard{border:1px solid var(--line);border-radius:9px;padding:10px;margin-bottom:10px;background:#fff}
+.excard .exhead{display:flex;gap:6px;align-items:center;margin-bottom:8px}
+.excard .exhead strong{flex:1}
+.pick{display:grid;grid-template-columns:repeat(auto-fill,minmax(70px,1fr));gap:6px;max-height:220px;overflow:auto;padding:2px}
+.pick button{position:relative;border:2px solid var(--line);background:#fbf8f1;border-radius:7px;padding:3px;height:64px;display:flex;align-items:center;justify-content:center}
+.pick button svg{max-width:100%;max-height:100%}
+.pick button.sel{border-color:var(--accent);background:var(--accent-soft)}
+.pick button .ord{position:absolute;top:2px;left:3px;background:var(--accent);color:#fff;border-radius:10px;font-size:10px;font-weight:700;padding:0 5px}
+#doc-preview-wrap{padding:16px;overflow:auto}
+#doc-preview{display:flex;flex-direction:column;gap:16px;align-items:center}
+#doc-preview .page{box-shadow:0 2px 12px rgba(0,0,0,.15);zoom:var(--pz,.7)}
+
+/* ---------- profiles ---------- */
+.prof{padding:16px;margin-bottom:14px}
+.prof-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.logo-drop{border:1.5px dashed var(--line);border-radius:9px;height:110px;display:flex;align-items:center;justify-content:center;background:#fff;overflow:hidden;position:relative}
+.logo-drop img{max-width:90%;max-height:90%}
+
+/* ---------- dialogs / misc ---------- */
+dialog{border:0;border-radius:14px;padding:0;box-shadow:0 10px 40px rgba(0,0,0,.25);max-width:min(560px,94vw);width:100%}
+dialog::backdrop{background:rgba(40,30,20,.35)}
+.dlg{padding:20px}
+.dlg-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:16px}
+#toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:#2d2a26;color:#fff;padding:8px 16px;border-radius:8px;opacity:0;transition:opacity .25s;pointer-events:none;z-index:100}
+#toast.on{opacity:1}
+#loading{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:200;flex-direction:column;gap:12px;color:var(--muted)}
+.spinner{width:34px;height:34px;border:3px solid var(--line);border-top-color:var(--accent);border-radius:50%;animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+#measure{position:absolute;left:-10000px;top:0;visibility:hidden}
+#print-root{display:none}
+
+/* ---------- printable pages ---------- */
+.page{width:210mm;height:297mm;background:#fff;color:#111;padding:11mm 14mm 9mm;display:flex;flex-direction:column;overflow:hidden;font-family:"Helvetica Neue",Arial,sans-serif;font-size:10.5pt;line-height:1.35}
+.page-body{flex:1;overflow:hidden;display:flex;flex-direction:column;gap:4mm}
+.page-foot{height:6mm;display:flex;justify-content:space-between;align-items:flex-end;font-size:8pt;color:#666;border-top:.3mm solid #bbb;padding-top:1mm;margin-top:2mm}
+.mini-head{display:flex;justify-content:space-between;font-size:8pt;color:#666;border-bottom:.3mm solid #bbb;padding-bottom:1mm}
+.doc-hdr{border:.4mm solid #333;border-radius:2mm}
+.doc-hdr .top{display:flex;justify-content:space-between;align-items:center;gap:6mm;padding:2.5mm 4mm;border-bottom:.3mm solid #333}
+.doc-hdr .side{display:flex;align-items:center;gap:3mm;max-width:50%}
+.doc-hdr .side img{max-height:14mm;max-width:38mm;object-fit:contain}
+.doc-hdr .side .txt{font-size:8.5pt;line-height:1.25;white-space:pre-line}
+.doc-hdr .side.right{text-align:right;flex-direction:row-reverse}
+.doc-hdr .side .cname{font-weight:700;font-size:10pt}
+.doc-hdr .mid{display:flex}
+.doc-hdr .fields{flex:1;min-width:0;padding:2.5mm 4mm;display:flex;flex-direction:column;gap:2.2mm}
+.doc-hdr h1{font-size:14pt;margin:0;display:flex;justify-content:space-between;align-items:center}
+.doc-hdr .model{font-size:10pt;border:.4mm solid #333;border-radius:1.5mm;padding:.5mm 2.5mm}
+.doc-hdr .frow{display:flex;gap:5mm}
+.doc-hdr .f,.fitxa-hdr .f{display:flex;gap:1.5mm;align-items:flex-end;white-space:nowrap;min-width:0}
+.doc-hdr .f b{font-weight:600}
+.doc-hdr .f .ln,.fitxa-hdr .f .ln{flex:1;border-bottom:.3mm solid #555;min-width:10mm;padding:0 1mm;overflow:hidden;text-overflow:ellipsis}
+.doc-hdr .grade{width:26mm;border-left:.3mm solid #333;display:flex;flex-direction:column;align-items:center;padding-top:1.5mm;font-weight:700;font-size:9pt}
+.doc-hdr .solbadge{background:#111;color:#fff;font-size:9pt;padding:.6mm 3mm;border-radius:1mm;letter-spacing:.5px}
+.fitxa-hdr{display:flex;align-items:center;gap:5mm;border-bottom:.5mm solid #333;padding-bottom:2.5mm}
+.fitxa-hdr img{max-height:13mm;max-width:30mm;object-fit:contain}
+.fitxa-hdr .tt{flex:1}
+.fitxa-hdr h1{font-size:15pt;margin:0}
+.fitxa-hdr .sub{font-size:8.5pt;color:#555}
+.fitxa-hdr .fs{display:flex;flex-direction:column;gap:2mm;width:88mm}
+.instr{font-size:9.5pt;border-left:1mm solid #bbb;padding:1mm 3mm;color:#333}
+.exblock{break-inside:avoid}
+.ex-st{display:flex;gap:2mm;font-size:10.5pt;margin-bottom:2mm}
+.ex-st .num{font-weight:700}
+.ex-st .txt{flex:1}
+.ex-st .pts{font-weight:600;white-space:nowrap;color:#333}
+.prow{display:flex;align-items:center;gap:4mm;padding:1.5mm 0}
+.prow .lbl{font-weight:700;width:5mm;align-self:flex-start}
+.prow .iso{flex:1;display:flex;justify-content:center;align-items:center}
+.pairs{display:grid;grid-template-columns:1fr 1fr;gap:3mm}
+.pairs .cell{display:flex;gap:2mm;align-items:flex-start;justify-content:center;padding:1mm}
+.legend{display:grid;grid-template-columns:1fr 1fr;gap:1.6mm 4mm;font-size:9pt;align-content:center}
+.legend .sw{display:flex;gap:2mm;align-items:center}
+.legend .sw i{width:7mm;height:5mm;border:.3mm solid #333;border-radius:1mm;display:inline-block}
+.modelrow{display:flex;gap:6mm;align-items:center;justify-content:center;border:.3mm solid #bbb;border-radius:2mm;padding:2mm}
+.lines div{border-bottom:.3mm solid #999;height:8mm}
+
+@media print{
+  @page{size:A4;margin:0}
+  html,body{background:#fff;height:auto}
+  body>*:not(#print-root){display:none!important}
+  #print-root{display:block}
+  .page{box-shadow:none;break-after:page;page-break-after:always}
+  .page:last-child{break-after:auto;page-break-after:auto}
+  *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+}
+@media (max-width:1100px){
+  #editor{grid-template-columns:1fr;height:auto}
+  #ed-canvas-wrap{height:60vh}
+  #doc-editor{grid-template-columns:1fr}
+  #doc-form{position:static;max-height:none}
+}
+</style>
+</head>
+<body>
+<div id="loading"><div class="spinner"></div><div data-i18n="loading">Carregant el motor 3D…</div></div>
+
+<header id="app-header">
+  <div class="brand">
+    <svg class="brand-logo" viewBox="0 0 40 40" aria-hidden="true"><polygon points="20,4 35,12.5 20,21 5,12.5" fill="#f2c94c"/><polygon points="5,12.5 20,21 20,37 5,28.5" fill="#57c7d4"/><polygon points="20,21 35,12.5 35,28.5 20,37" fill="#e5533d"/><g fill="none" stroke="#5a1d12" stroke-width="1.6" stroke-linejoin="round"><polygon points="20,4 35,12.5 35,28.5 20,37 5,28.5 5,12.5"/><polyline points="5,12.5 20,21 35,12.5"/><line x1="20" y1="21" x2="20" y2="37"/></g></svg>
+    <span data-i18n="appName">Generador de fitxes de vistes</span>
+  </div>
+  <nav id="tabs">
+    <button data-tab="docs" data-i18n="tabDocs" class="on">Documents</button>
+    <button data-tab="pieces" data-i18n="tabPieces">Peces</button>
+    <button data-tab="doc" data-i18n="tabEditor">Document</button>
+    <button data-tab="centres" data-i18n="tabCentres">Centres</button>
+    <button data-tab="data" data-i18n="tabData">Dades</button>
+  </nav>
+  <div class="hdr-right">
+    <label><span data-i18n="profile">Centre</span><select id="sel-profile"></select></label>
+    <label>🌐<select id="sel-lang"><option value="ca">Català</option><option value="es">Castellano</option><option value="gl">Galego</option></select></label>
+  </div>
+</header>
+
+<main>
+  <!-- DOCUMENTS -->
+  <section class="tab on" id="tab-docs">
+    <div class="toolbar">
+      <button class="btn primary" id="btn-new-fitxa">＋ <span data-i18n="newFicha">Nova fitxa</span></button>
+      <button class="btn primary" id="btn-new-exam">＋ <span data-i18n="newExam">Nou examen</span></button>
+    </div>
+    <div id="docs-list" class="grid-cards"></div>
+  </section>
+
+  <!-- PIECES -->
+  <section class="tab" id="tab-pieces">
+    <div id="pieces-lib">
+      <div class="toolbar">
+        <button class="btn primary" id="btn-new-piece">＋ <span data-i18n="newPiece">Nova peça</span></button>
+        <select id="lib-filter" style="width:auto"><option value="" data-i18n="allLevels">Tots els nivells</option><option value="1" data-i18n="lvl1">Fàcil</option><option value="2" data-i18n="lvl2">Mitjà</option><option value="3" data-i18n="lvl3">Difícil</option></select>
+        <input type="text" id="lib-search" style="width:220px" data-i18n-ph="search">
+      </div>
+      <div id="pieces-list" class="grid-cards"></div>
+    </div>
+
+    <div id="editor">
+      <div class="card ed-side">
+        <div class="field"><span data-i18n="name">Nom</span><input type="text" id="ed-name"></div>
+        <div class="row">
+          <label class="field"><span data-i18n="level">Nivell</span><select id="ed-level"><option value="1" data-i18n="lvl1">Fàcil</option><option value="2" data-i18n="lvl2">Mitjà</option><option value="3" data-i18n="lvl3">Difícil</option></select></label>
+        </div>
+        <div class="row">
+          <label class="field"><span data-i18n="base">Base</span><select id="ed-n"></select></label>
+          <label class="field"><span data-i18n="maxH">Alçada màx.</span><select id="ed-h"></select></label>
+        </div>
+        <hr class="sep">
+        <div class="ed-tools">
+          <button class="btn on" data-mode="add">➕ <span data-i18n="toolAdd">Afegir cub</span></button>
+          <button class="btn" data-mode="remove">➖ <span data-i18n="toolRemove">Treure cub</span></button>
+          <button class="btn" data-mode="cut">✂️ <span data-i18n="toolCut">Tallar (3 punts)</span></button>
+        </div>
+        <hr class="sep">
+        <div class="ed-tools">
+          <div class="row"><button class="btn" id="ed-undo">↶ <span data-i18n="undo">Desfer</span></button><button class="btn" id="ed-redo">↷ <span data-i18n="redo">Refer</span></button></div>
+          <button class="btn" id="ed-rot">⟳ <span data-i18n="rotate">Girar 90°</span></button>
+          <button class="btn" id="ed-mirror">⇋ <span data-i18n="mirror">Mirall</span></button>
+          <button class="btn" id="ed-reset">⌖ <span data-i18n="resetView">Centrar vista</span></button>
+          <button class="btn danger" id="ed-clear">🗑 <span data-i18n="clear">Buidar</span></button>
+        </div>
+        <hr class="sep">
+        <h3 data-i18n="cuts">Talls</h3>
+        <ul class="cutlist" id="ed-cutlist"></ul>
+        <hr class="sep">
+        <div class="row"><button class="btn" id="ed-back" data-i18n="back">Tornar</button><button class="btn primary" id="ed-save" data-i18n="save">Desar</button></div>
+      </div>
+      <div class="card" id="ed-canvas-wrap">
+        <div id="ed-canvas"></div>
+        <div id="ed-hint"></div>
+        <div class="card" id="ed-cutpanel">
+          <h3 data-i18n="cutZone">Zona del tall</h3>
+          <div class="small muted" data-i18n="cutZoneHelp">Només es retalla el que queda dins d'aquesta caixa.</div>
+          <div class="boxin" id="ed-boxin"></div>
+          <div class="ed-tools">
+            <button class="btn" id="ed-cut-red" style="border-color:#e05a4a;color:#c0392b">■ <span data-i18n="removeRed">Eliminar la part vermella</span></button>
+            <button class="btn" id="ed-cut-blue" style="border-color:#3f6fd8;color:#2851b8">■ <span data-i18n="removeBlue">Eliminar la part blava</span></button>
+            <button class="btn ghost" id="ed-cut-cancel" data-i18n="cancel">Cancel·lar</button>
+          </div>
+        </div>
+      </div>
+      <div class="card ed-side">
+        <div class="row" style="align-items:center;margin-bottom:8px"><h3 style="margin:0" data-i18n="viewsPreview">Vistes</h3><label class="check" style="justify-content:flex-end;margin:0"><input type="checkbox" id="ed-colored"><span data-i18n="colored">Color</span></label></div>
+        <div class="views-mini" id="ed-views"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- DOCUMENT EDITOR -->
+  <section class="tab" id="tab-doc">
+    <div id="doc-none" class="empty card" data-i18n="noDocOpen">Obre o crea un document des de la pestanya Documents.</div>
+    <div id="doc-editor" style="display:none">
+      <div class="card" id="doc-form"></div>
+      <div class="card" id="doc-preview-wrap">
+        <div class="toolbar" style="justify-content:space-between">
+          <h3 style="margin:0" data-i18n="preview">Vista prèvia</h3>
+          <div style="display:flex;gap:8px;align-items:center">
+            <select id="prev-mode" style="width:auto"><option value="st" data-i18n="cStatement">Enunciat</option><option value="sol" data-i18n="cSolution">Solucionari</option></select>
+            <select id="prev-lang" style="width:auto"><option value="ca">CA</option><option value="es">ES</option><option value="gl">GL</option></select>
+            <button class="btn primary" id="btn-export">⬇ <span data-i18n="exportPdf">Generar PDF</span></button>
+          </div>
+        </div>
+        <div id="doc-preview"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CENTRES -->
+  <section class="tab" id="tab-centres">
+    <div class="toolbar"><button class="btn primary" id="btn-new-profile">＋ <span data-i18n="newProfile">Nou centre</span></button></div>
+    <div id="profiles-list"></div>
+  </section>
+
+  <!-- DATA -->
+  <section class="tab" id="tab-data">
+    <div class="card" style="padding:18px;max-width:720px">
+      <h2 data-i18n="tabData">Dades</h2>
+      <p data-i18n="dataInfo"></p>
+      <div class="toolbar">
+        <button class="btn primary" id="btn-export-data">⬇ <span data-i18n="exportData">Exportar les meves dades</span></button>
+        <label class="btn">⬆ <span data-i18n="importData">Importar dades</span><input type="file" id="inp-import" accept=".json,application/json" hidden></label>
+        <button class="btn" id="btn-samples" data-i18n="loadSamples">Afegir peces d'exemple</button>
+      </div>
+      <p class="small muted" data-i18n="privacy"></p>
+    </div>
+  </section>
+</main>
+
+<!-- export dialog -->
+<dialog id="dlg-export"><div class="dlg">
+  <h2 data-i18n="exportPdf">Generar PDF</h2>
+  <div class="field"><span data-i18n="docLang">Idioma del document</span>
+    <select id="exp-lang"><option value="ca">Català</option><option value="es">Castellano</option><option value="gl">Galego</option></select></div>
+  <div class="field"><span data-i18n="content">Contingut</span>
+    <select id="exp-content"><option value="st" data-i18n="cStatement">Enunciat</option><option value="sol" data-i18n="cSolution">Solucionari</option><option value="both" data-i18n="cBoth">Enunciat + solucionari</option></select></div>
+  <label class="check" id="exp-modelb-wrap"><input type="checkbox" id="exp-modelb"><span data-i18n="modelB">Afegir model B</span></label>
+  <p class="small muted" data-i18n="printHint"></p>
+  <div class="dlg-actions"><button class="btn" value="cancel" id="exp-cancel" data-i18n="cancel">Cancel·lar</button><button class="btn primary" id="exp-go" data-i18n="exportPdf">Generar PDF</button></div>
+</div></dialog>
+
+<!-- welcome dialog -->
+<dialog id="dlg-welcome"><div class="dlg">
+  <h2 data-i18n="welcomeTitle">Benvingut/da!</h2>
+  <p data-i18n="welcomeText"></p>
+  <div class="field"><span data-i18n="uiLang">Idioma</span><select id="wel-lang"><option value="ca">Català</option><option value="es">Castellano</option><option value="gl">Galego</option></select></div>
+  <div class="field"><span data-i18n="teacher">Professor/a</span><input type="text" id="wel-teacher"></div>
+  <div class="field"><span data-i18n="centreName">Nom del centre</span><input type="text" id="wel-centre"></div>
+  <div class="field"><span data-i18n="adminText">Administració</span><input type="text" id="wel-admin"></div>
+  <p class="small muted" data-i18n="welcomeLogos"></p>
+  <div class="dlg-actions"><button class="btn primary" id="wel-go" data-i18n="start">Començar</button></div>
+</div></dialog>
+
+<div id="toast"></div>
+<div id="measure"></div>
+<div id="print-root"></div>
+
+<script type="importmap">
+{"imports":{
+  "three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+}}
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+/* =====================================================================
+   I18N  —  [català, castellano, galego]
+   ===================================================================== */
+const LANGS = ['ca','es','gl'];
+const T = {
+  appName:['Generador de fitxes de vistes','Generador de fichas de vistas','Xerador de fichas de vistas'],
+  tabDocs:['Documents','Documentos','Documentos'], tabPieces:['Peces','Piezas','Pezas'], tabEditor:['Document','Documento','Documento'],
+  tabCentres:['Centres','Centros','Centros'], tabData:['Dades','Datos','Datos'],
+  profile:['Centre','Centro','Centro'], uiLang:['Idioma','Idioma','Idioma'],
+  loading:['Carregant el motor 3D…','Cargando el motor 3D…','Cargando o motor 3D…'],
+  loadErr:["No s'ha pogut carregar el motor 3D. Cal connexió a internet.",'No se ha podido cargar el motor 3D. Hace falta conexión a internet.','Non se puido cargar o motor 3D. Cómpre conexión a internet.'],
+  newFicha:['Nova fitxa','Nueva ficha','Nova ficha'], newExam:['Nou examen','Nuevo examen','Novo exame'], newPiece:['Nova peça','Nueva pieza','Nova peza'],
+  ficha:['Fitxa','Ficha','Ficha'], examen:['Examen','Examen','Exame'],
+  open:['Obrir','Abrir','Abrir'], edit:['Editar','Editar','Editar'], duplicate:['Duplicar','Duplicar','Duplicar'], del:['Esborrar','Borrar','Borrar'],
+  save:['Desar','Guardar','Gardar'], cancel:['Cancel·lar','Cancelar','Cancelar'], back:['Tornar','Volver','Volver'], start:['Començar','Empezar','Comezar'],
+  copyOf:['(còpia)','(copia)','(copia)'],
+  noDocs:['Encara no tens cap document. Crea una fitxa o un examen.','Todavía no tienes ningún documento. Crea una ficha o un examen.','Aínda non tes ningún documento. Crea unha ficha ou un exame.'],
+  noPieces:['Encara no tens cap peça. Crea\'n una o afegeix les peces d\'exemple (pestanya Dades).','Todavía no tienes ninguna pieza. Crea una o añade las piezas de ejemplo (pestaña Datos).','Aínda non tes ningunha peza. Crea unha ou engade as pezas de exemplo (lapela Datos).'],
+  noDocOpen:['Obre o crea un document des de la pestanya Documents.','Abre o crea un documento desde la pestaña Documentos.','Abre ou crea un documento desde a lapela Documentos.'],
+  confirmDel:['Segur que ho vols esborrar?','¿Seguro que quieres borrarlo?','Seguro que queres borralo?'],
+  confirmLeave:['Hi ha canvis sense desar. Vols sortir igualment?','Hay cambios sin guardar. ¿Quieres salir igualmente?','Hai cambios sen gardar. Queres saír igualmente?'],
+  updated:['Modificat','Modificado','Modificado'], saved:['Desat','Guardado','Gardado'],
+  search:['Cercar…','Buscar…','Buscar…'], allLevels:['Tots els nivells','Todos los niveles','Todos os niveis'],
+  name:['Nom','Nombre','Nome'], level:['Nivell','Nivel','Nivel'], lvl1:['Fàcil','Fácil','Fácil'], lvl2:['Mitjà','Medio','Medio'], lvl3:['Difícil','Difícil','Difícil'],
+  base:['Base','Base','Base'], maxH:['Alçada màx.','Altura máx.','Altura máx.'],
+  toolAdd:['Afegir cub','Añadir cubo','Engadir cubo'], toolRemove:['Treure cub','Quitar cubo','Quitar cubo'], toolCut:['Tallar (3 punts)','Cortar (3 puntos)','Cortar (3 puntos)'],
+  undo:['Desfer','Deshacer','Desfacer'], redo:['Refer','Rehacer','Refacer'], rotate:['Girar 90°','Girar 90°','Xirar 90°'], mirror:['Mirall','Espejo','Espello'],
+  resetView:['Centrar vista','Centrar vista','Centrar vista'], clear:['Buidar','Vaciar','Baleirar'],
+  cuts:['Talls','Cortes','Cortes'], noCuts:['Cap tall','Ningún corte','Ningún corte'], cutN:['Tall','Corte','Corte'],
+  hintAdd:['Clic: afegir un cub (sobre la quadrícula o sobre una cara) · Arrossegar: girar · Roda: zoom','Clic: añadir un cubo (sobre la cuadrícula o sobre una cara) · Arrastrar: girar · Rueda: zoom','Clic: engadir un cubo (sobre a cuadrícula ou sobre unha cara) · Arrastrar: xirar · Roda: zoom'],
+  hintRemove:['Clic sobre un cub per treure\'l','Clic sobre un cubo para quitarlo','Clic sobre un cubo para quitalo'],
+  hintCut:['Fes clic a 3 vèrtexs (punts) per definir el pla de tall','Haz clic en 3 vértices (puntos) para definir el plano de corte','Fai clic en 3 vértices (puntos) para definir o plano de corte'],
+  cutZone:['Zona del tall','Zona del corte','Zona do corte'],
+  cutZoneHelp:["Només es retalla el que queda dins d'aquesta caixa.",'Solo se recorta lo que queda dentro de esta caja.','Só se recorta o que queda dentro desta caixa.'],
+  removeRed:['Eliminar la part vermella','Eliminar la parte roja','Eliminar a parte vermella'],
+  removeBlue:['Eliminar la part blava','Eliminar la parte azul','Eliminar a parte azul'],
+  errCollinear:["Els 3 punts estan alineats. Tria'n uns altres.",'Los 3 puntos están alineados. Elige otros.','Os 3 puntos están aliñados. Escolle outros.'],
+  errFlat:['El pla ha de ser inclinat: els 3 punts no poden estar tots en un mateix pla horitzontal o vertical.','El plano debe ser inclinado: los 3 puntos no pueden estar todos en un mismo plano horizontal o vertical.','O plano debe ser inclinado: os 3 puntos non poden estar todos nun mesmo plano horizontal ou vertical.'],
+  errNothing:['Aquest tall no elimina res.','Este corte no elimina nada.','Este corte non elimina nada.'],
+  confirmShrink:['Hi ha cubs fora de la nova mida i s\'esborraran. Continuar?','Hay cubos fuera del nuevo tamaño y se borrarán. ¿Continuar?','Hai cubos fóra do novo tamaño e borraranse. Continuar?'],
+  viewsPreview:['Vistes','Vistas','Vistas'], colored:['Color per vistes','Color por vistas','Cor por vistas'],
+  untitledPiece:['Peça sense nom','Pieza sin nombre','Peza sen nome'], untitledDoc:['Document sense títol','Documento sin título','Documento sen título'],
+  docType:['Tipus','Tipo','Tipo'], title:['Títol','Título','Título'], subject:['Assignatura','Asignatura','Materia'], course:['Curs','Curso','Curso'],
+  group:['Grup','Grupo','Grupo'], term:['Trimestre','Trimestre','Trimestre'], date:['Data','Fecha','Data'],
+  dateHint:['Si la deixes buida, sortirà una línia per escriure-la.','Si la dejas vacía, saldrá una línea para escribirla.','Se a deixas baleira, sairá unha liña para escribila.'],
+  instructions:['Instruccions','Instrucciones','Instrucións'], gridSize:['Mida de la quadrícula','Tamaño de la cuadrícula','Tamaño da cuadrícula'],
+  hiddenLines:['Línies ocultes (discontínues) al solucionari','Líneas ocultas (discontinuas) en el solucionario','Liñas ocultas (descontinuas) no solucionario'],
+  viewLabels:['Indicar on va cada vista a la quadrícula','Indicar dónde va cada vista en la cuadrícula','Indicar onde vai cada vista na cuadrícula'],
+  exercises:['Exercicis','Ejercicios','Exercicios'], addEx:['Afegir exercici','Añadir ejercicio','Engadir exercicio'],
+  kVistas:['Dibuixar les vistes','Dibujar las vistas','Debuxar as vistas'], kColor:['Acolorir segons la vista','Colorear según la vista','Colorear segundo a vista'],
+  kTercera:['Vista que falta','Vista que falta','Vista que falta'], kText:['Pregunta oberta','Pregunta abierta','Pregunta aberta'],
+  points:['Punts','Puntos','Puntos'], statement:['Enunciat','Enunciado','Enunciado'],
+  statementPh:["Buit = enunciat per defecte en l'idioma del PDF",'Vacío = enunciado por defecto en el idioma del PDF','Baleiro = enunciado por defecto no idioma do PDF'],
+  choosePieces:["Peces de l'exercici (clic per triar, en ordre)",'Piezas del ejercicio (clic para elegir, en orden)','Pezas do exercicio (clic para escoller, en orde)'],
+  modelPiece:['Peça model (surt acolorida)','Pieza modelo (sale coloreada)','Peza modelo (sae coloreada)'], none:['Cap','Ninguna','Ningunha'],
+  missingView:['Vista que falta','Vista que falta','Vista que falta'], showIso:['Mostrar també la perspectiva','Mostrar también la perspectiva','Amosar tamén a perspectiva'],
+  lines:['Línies per respondre','Líneas para responder','Liñas para responder'], perRow:['Peces per fila','Piezas por fila','Pezas por fila'],
+  exportPdf:['Generar PDF','Generar PDF','Xerar PDF'], preview:['Vista prèvia','Vista previa','Vista previa'],
+  docLang:['Idioma del document','Idioma del documento','Idioma do documento'], content:['Contingut','Contenido','Contido'],
+  cStatement:['Enunciat','Enunciado','Enunciado'], cSolution:['Solucionari','Solucionario','Solucionario'], cBoth:['Enunciat + solucionari','Enunciado + solucionario','Enunciado + solucionario'],
+  modelB:['Afegir model B (mateixes peces girades 90°)','Añadir modelo B (mismas piezas giradas 90°)','Engadir modelo B (mesmas pezas xiradas 90°)'],
+  printHint:["S'obrirà el diàleg d'impressió: tria «Desa com a PDF» com a destinació.",'Se abrirá el diálogo de impresión: elige «Guardar como PDF» como destino.','Abrirase o diálogo de impresión: escolle «Gardar como PDF» como destino.'],
+  noPiecesYet:['Primer crea alguna peça a la pestanya Peces.','Primero crea alguna pieza en la pestaña Piezas.','Primeiro crea algunha peza na lapela Pezas.'],
+  teacher:['Professor/a','Profesor/a','Profesor/a'], centreName:['Nom del centre','Nombre del centro','Nome do centro'],
+  adminText:['Administració (text al costat del logo)','Administración (texto junto al logo)','Administración (texto xunto ao logo)'],
+  logoAdmin:["Logo de l'administració",'Logo de la administración','Logo da administración'], logoCentre:['Logo del centre','Logo del centro','Logo do centro'],
+  upload:['Clic per pujar una imatge','Clic para subir una imagen','Clic para subir unha imaxe'], removeImg:['Treure','Quitar','Quitar'],
+  newProfile:['Nou centre','Nuevo centro','Novo centro'], active:['En ús','En uso','En uso'], useThis:['Fer servir aquest','Usar este','Usar este'],
+  defSubject:['Assignatura per defecte','Asignatura por defecto','Materia por defecto'],
+  welcomeTitle:['Benvingut/da!','¡Bienvenido/a!','Benvido/a!'],
+  welcomeText:['Configura el teu centre. Ho pots canviar, o afegir-ne més, quan vulguis a la pestanya Centres.','Configura tu centro. Puedes cambiarlo, o añadir más, cuando quieras en la pestaña Centros.','Configura o teu centro. Podes cambialo, ou engadir máis, cando queiras na lapela Centros.'],
+  welcomeLogos:['Els logos els pots pujar després a la pestanya Centres.','Los logos los puedes subir después en la pestaña Centros.','Os logos podes subilos despois na lapela Centros.'],
+  dataInfo:["Les teves dades (centres, logos, peces i documents) es guarden només en aquest navegador. Exporta-les de tant en tant com a còpia de seguretat i per passar-les a un altre ordinador o a un company.",'Tus datos (centros, logos, piezas y documentos) se guardan solo en este navegador. Expórtalos de vez en cuando como copia de seguridad y para pasarlos a otro ordenador o a un compañero.','Os teus datos (centros, logos, pezas e documentos) gárdanse só neste navegador. Expórtaos de cando en vez como copia de seguridade e para pasalos a outro ordenador ou a un compañeiro.'],
+  privacy:["Aquesta web no envia cap dada a cap servidor. Si esborres les dades de navegació d'aquest lloc, es perdrà el que no hagis exportat.",'Esta web no envía ningún dato a ningún servidor. Si borras los datos de navegación de este sitio, se perderá lo que no hayas exportado.','Esta web non envía ningún dato a ningún servidor. Se borras os datos de navegación deste sitio, perderase o que non exportases.'],
+  exportData:['Exportar les meves dades','Exportar mis datos','Exportar os meus datos'], importData:['Importar dades','Importar datos','Importar datos'],
+  importOk:['Dades importades','Datos importados','Datos importados'], importErr:['El fitxer no és vàlid','El archivo no es válido','O ficheiro non é válido'],
+  loadSamples:["Afegir peces d'exemple",'Añadir piezas de ejemplo','Engadir pezas de exemplo'], samplesOk:["Peces d'exemple afegides",'Piezas de ejemplo añadidas','Pezas de exemplo engadidas'],
+  storageWarn:["No es poden desar dades en aquest navegador (mode privat?). El que facis es perdrà en tancar.",'No se pueden guardar datos en este navegador (¿modo privado?). Lo que hagas se perderá al cerrar.','Non se poden gardar datos neste navegador (modo privado?). O que fagas perderase ao pechar.'],
+  /* ---- textos del document ---- */
+  dName:['Nom i cognoms','Nombre y apellidos','Nome e apelidos'], dGrade:['Nota','Nota','Nota'],
+  dPage:['Pàgina','Página','Páxina'], dOf:['de','de','de'], dModel:['Model','Modelo','Modelo'], dSolution:['SOLUCIONARI','SOLUCIONARIO','SOLUCIONARIO'],
+  dPts:['punts','puntos','puntos'], dPt:['punt','punto','punto'],
+  vA:['Alçat','Alzado','Alzado'], vP:['Planta','Planta','Planta'], vF:['Perfil esquerre','Perfil izquierdo','Perfil esquerdo'], vFs:['Perfil','Perfil','Perfil'],
+  aA:['ALÇAT','ALZADO','ALZADO'], aP:['PLANTA','PLANTA','PLANTA'], aF:['PERFIL','PERFIL','PERFIL'],
+  stVistas:["Dibuixa l'alçat, la planta i el perfil esquerre de les peces següents (sistema europeu).",'Dibuja el alzado, la planta y el perfil izquierdo de las siguientes piezas (sistema europeo).','Debuxa o alzado, a planta e o perfil esquerdo das seguintes pezas (sistema europeo).'],
+  stColor:["Prenent com a model la peça acolorida, acoloreix les cares de les peces segons la vista o vistes en què es veu cada cara. Fes servir a totes el mateix codi de colors.",'Tomando como modelo la pieza coloreada, colorea las caras de las piezas según la vista o vistas en las que se ve cada cara. Utiliza en todas el mismo código de colores.','Tomando como modelo a peza coloreada, colorea as caras das pezas segundo a vista ou vistas nas que se ve cada cara. Utiliza en todas o mesmo código de cores.'],
+  stTercera:['Dibuixa la vista que falta de cada peça (sistema europeu).','Dibuja la vista que falta de cada pieza (sistema europeo).','Debuxa a vista que falta de cada peza (sistema europeo).'],
+};
+let uiLang = 'ca';
+const li = l => Math.max(0, LANGS.indexOf(l));
+const t = (k, l = uiLang) => (T[k] ? T[k][li(l)] : k);
+function applyI18n(){
+  document.documentElement.lang = uiLang;
+  document.querySelectorAll('[data-i18n]').forEach(el => { el.textContent = t(el.dataset.i18n); });
+  document.querySelectorAll('[data-i18n-ph]').forEach(el => { el.placeholder = t(el.dataset.i18nPh); });
+  document.title = t('appName');
+}
+
+/* =====================================================================
+   UTILITATS
+   ===================================================================== */
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+const clone = o => JSON.parse(JSON.stringify(o));
+const debounce = (fn, ms) => { let h; return (...a) => { clearTimeout(h); h = setTimeout(() => fn(...a), ms); }; };
+function toast(msg){ const el = $('#toast'); el.textContent = msg; el.classList.add('on'); clearTimeout(toast.h); toast.h = setTimeout(() => el.classList.remove('on'), 2200); }
+const f2 = n => Math.round(n * 1000) / 1000;
+const sub = (a, b) => [a[0]-b[0], a[1]-b[1], a[2]-b[2]];
+const dot = (a, b) => a[0]*b[0] + a[1]*b[1] + a[2]*b[2];
+const cross = (a, b) => [a[1]*b[2]-a[2]*b[1], a[2]*b[0]-a[0]*b[2], a[0]*b[1]-a[1]*b[0]];
+const norm = a => { const l = Math.hypot(a[0], a[1], a[2]) || 1; return [a[0]/l, a[1]/l, a[2]/l]; };
+const lerp3 = (a, b, s) => [a[0]+(b[0]-a[0])*s, a[1]+(b[1]-a[1])*s, a[2]+(b[2]-a[2])*s];
+
+/* =====================================================================
+   EMMAGATZEMATGE (IndexedDB, amb reserva en memòria)
+   ===================================================================== */
+const STORES = ['profiles', 'pieces', 'docs', 'settings'];
+const DB = {
+  db: null, mem: null,
+  async open(){
+    try {
+      this.db = await new Promise((res, rej) => {
+        const r = indexedDB.open('vistes-app', 1);
+        r.onupgradeneeded = () => STORES.forEach(s => r.result.createObjectStore(s, { keyPath: 'id' }));
+        r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error);
+      });
+      try { navigator.storage && navigator.storage.persist && navigator.storage.persist(); } catch {}
+    } catch { this.mem = Object.fromEntries(STORES.map(s => [s, new Map()])); toast(t('storageWarn')); }
+  },
+  req(store, mode, fn){
+    if (this.mem) return Promise.resolve(fn(null));
+    return new Promise((res, rej) => { const q = fn(this.db.transaction(store, mode).objectStore(store)); q.onsuccess = () => res(q.result); q.onerror = () => rej(q.error); });
+  },
+  all(s){ return this.mem ? Promise.resolve([...this.mem[s].values()]) : this.req(s, 'readonly', st => st.getAll()); },
+  put(s, o){ if (this.mem){ this.mem[s].set(o.id, clone(o)); return Promise.resolve(); } return this.req(s, 'readwrite', st => st.put(o)); },
+  del(s, id){ if (this.mem){ this.mem[s].delete(id); return Promise.resolve(); } return this.req(s, 'readwrite', st => st.delete(id)); },
+};
+const state = { profiles: [], pieces: [], docs: [], settings: { id: 'settings', uiLang: null, activeProfile: null } };
+const pieceById = id => state.pieces.find(p => p.id === id);
+const profileById = id => state.profiles.find(p => p.id === id);
+const activeProfile = () => profileById(state.settings.activeProfile) || state.profiles[0] || null;
+async function saveSettings(){ await DB.put('settings', state.settings); }
+async function savePiece(p){ p.updated = Date.now(); const i = state.pieces.findIndex(x => x.id === p.id); if (i < 0) state.pieces.push(p); else state.pieces[i] = p; await DB.put('pieces', p); }
+async function saveDoc(d){ d.updated = Date.now(); const i = state.docs.findIndex(x => x.id === d.id); if (i < 0) state.docs.push(d); else state.docs[i] = d; await DB.put('docs', d); }
+async function saveProfile(p){ const i = state.profiles.findIndex(x => x.id === p.id); if (i < 0) state.profiles.push(p); else state.profiles[i] = p; await DB.put('profiles', p); }
+
+/* =====================================================================
+   GEOMETRIA  (Manifold: cubs − talls)
+   Coordenades: x → dreta (vist des de l'alçat), y → cap al fons, z → amunt.
+   L'alçat es mira des de −y, la planta des de +z i el perfil esquerre des de −x.
+   ===================================================================== */
+let MF = null;
+async function initManifold(){
+  const mod = await import('https://cdn.jsdelivr.net/npm/manifold-3d@3.0.0/manifold.js');
+  MF = await mod.default();
+  MF.setup();
+}
+function planeOf(pts){
+  const n = cross(sub(pts[1], pts[0]), sub(pts[2], pts[0]));
+  return { n, d: dot(n, pts[0]) };
+}
+function sideOf(pts, p){ const { n, d } = planeOf(pts); return Math.sign(dot(n, p) - d) || 1; }
+function cutRegion(cut){
+  const [a, b] = cut.box;
+  const box = MF.Manifold.cube([b[0]-a[0], b[1]-a[1], b[2]-a[2]], false).translate(a);
+  const { n } = planeOf(cut.pts);
+  const nn = norm(n).map(v => v * cut.side);
+  const r = box.trimByPlane(nn, dot(nn, cut.pts[0]));
+  box.delete();
+  return r;
+}
+function buildManifold(cubes, cuts){
+  if (!cubes.length) return null;
+  const parts = cubes.map(c => MF.Manifold.cube([1, 1, 1], false).translate(c));
+  let s = MF.Manifold.union(parts);
+  parts.forEach(p => p.delete());
+  for (const c of cuts){ const r = cutRegion(c); const s2 = s.subtract(r); s.delete(); r.delete(); s = s2; }
+  return s;
+}
+function meshOf(m){
+  const mesh = m.getMesh(), np = mesh.numProp, vp = mesh.vertProperties, tv = mesh.triVerts;
+  const verts = [], map = new Map(), remap = [];
+  for (let i = 0; i < vp.length / np; i++){
+    const p = [vp[i*np], vp[i*np+1], vp[i*np+2]].map(v => Math.round(v * 1e4) / 1e4);
+    const k = p.join(',');
+    if (!map.has(k)){ map.set(k, verts.length); verts.push(p); }
+    remap.push(map.get(k));
+  }
+  const tris = [];
+  for (let i = 0; i < tv.length; i += 3){
+    const a = remap[tv[i]], b = remap[tv[i+1]], c = remap[tv[i+2]];
+    if (a === b || b === c || a === c) continue;
+    tris.push([a, b, c]);
+  }
+  // Quan un tall coincideix amb una cara, Manifold pot deixar una làmina de gruix zero:
+  // parells de triangles amb els mateixos vèrtexs i orientació oposada. Els eliminem.
+  const count = new Map(), keyOf = tr => [...tr].sort((x, y) => x - y).join('_');
+  tris.forEach(tr => { const k = keyOf(tr); count.set(k, (count.get(k) || 0) + 1); });
+  return { verts, tris: tris.filter(tr => count.get(keyOf(tr)) === 1) };
+}
+const geoCache = new Map();
+function getGeo(piece){
+  if (!MF || !piece || !piece.cubes.length) return null;
+  const key = JSON.stringify([piece.cubes, piece.cuts]);
+  if (geoCache.has(key)) return geoCache.get(key);
+  const m = buildManifold(piece.cubes, piece.cuts);
+  const empty = m.isEmpty();
+  const raw = empty ? null : meshOf(m);
+  m.delete();
+  const geo = raw && analyse(raw);
+  if (geoCache.size > 300) geoCache.clear();
+  geoCache.set(key, geo);
+  return geo;
+}
+// Agrupa triangles per pla, troba les arestes reals (entre plans diferents) i la caixa contenidora.
+function analyse({ verts, tris }){
+  const T3 = tris.map(([a, b, c]) => {
+    const pa = verts[a], pb = verts[b], pc = verts[c];
+    const n = norm(cross(sub(pb, pa), sub(pc, pa)));
+    const d = dot(n, pa);
+    return { v: [a, b, c], p: [pa, pb, pc], n, d, key: n.map(x => f2(x)).join(',') + '|' + f2(d), e1: sub(pb, pa), e2: sub(pc, pa) };
+  });
+  const emap = new Map();
+  T3.forEach((tr, ti) => { for (let k = 0; k < 3; k++){ const i = tr.v[k], j = tr.v[(k+1)%3]; const key = i < j ? i+'_'+j : j+'_'+i; if (!emap.has(key)) emap.set(key, []); emap.get(key).push(ti); } });
+  const edges = [];
+  for (const [key, ts] of emap){
+    if (ts.length === 2 && T3[ts[0]].key === T3[ts[1]].key) continue;
+    edges.push(key.split('_').map(Number));
+  }
+  const min = [Infinity, Infinity, Infinity], max = [-Infinity, -Infinity, -Infinity];
+  verts.forEach(p => { for (let k = 0; k < 3; k++){ min[k] = Math.min(min[k], p[k]); max[k] = Math.max(max[k], p[k]); } });
+  return { verts, tris: T3, edges, bbox: { min, max }, segCache: {} };
+}
+
+/* ---------- projeccions ---------- */
+const S2 = Math.SQRT2, S6 = Math.sqrt(6), S3 = Math.sqrt(3);
+const VIEWS = {
+  iso:    { d: [-1/S3, -1/S3, 1/S3], f: p => [(p[0] - p[1]) / S2, -(p[0] + p[1] + 2*p[2]) / S6] },
+  alzado: { d: [0, -1, 0], f: p => [p[0], -p[2]] },
+  planta: { d: [0, 0, 1],  f: p => [p[0], -p[1]] },
+  perfil: { d: [-1, 0, 0], f: p => [-p[1], -p[2]] },
+};
+function occluded(geo, P, D){
+  for (const tr of geo.tris){
+    const pv = cross(D, tr.e2), det = dot(tr.e1, pv);
+    if (Math.abs(det) < 1e-9) continue;
+    const inv = 1 / det, tv = sub(P, tr.p[0]);
+    const u = dot(tv, pv) * inv; if (u < -1e-7 || u > 1 + 1e-7) continue;
+    const qv = cross(tv, tr.e1);
+    const v = dot(D, qv) * inv; if (v < -1e-7 || u + v > 1 + 1e-7) continue;
+    if (dot(tr.e2, qv) * inv > 1e-5) return true;
+  }
+  return false;
+}
+// Arestes projectades, partides on es creuen i classificades en visibles / ocultes.
+function visibleSegments(geo, viewName){
+  if (geo.segCache[viewName]) return geo.segCache[viewName];
+  const view = VIEWS[viewName], V = geo.verts;
+  const segs = [];
+  for (const [i, j] of geo.edges){
+    const A = view.f(V[i]), B = view.f(V[j]);
+    if (Math.hypot(B[0]-A[0], B[1]-A[1]) < 1e-6) continue;
+    segs.push({ i, j, A, B });
+  }
+  const out = [];
+  for (const s of segs){
+    const dx = s.B[0]-s.A[0], dy = s.B[1]-s.A[1], L2 = dx*dx + dy*dy, L = Math.sqrt(L2);
+    const ts = [0, 1];
+    for (const o of segs){
+      if (o === s) continue;
+      const ex = o.B[0]-o.A[0], ey = o.B[1]-o.A[1];
+      const wx = o.A[0]-s.A[0], wy = o.A[1]-s.A[1];
+      const den = dx*ey - dy*ex;
+      if (Math.abs(den) < 1e-9){
+        if (Math.abs(dx*wy - dy*wx) > 1e-6 * L) continue;
+        for (const Q of [o.A, o.B]){ const tq = ((Q[0]-s.A[0])*dx + (Q[1]-s.A[1])*dy) / L2; if (tq > 1e-7 && tq < 1 - 1e-7) ts.push(tq); }
+      } else {
+        const tq = (wx*ey - wy*ex) / den, uq = (wx*dy - wy*dx) / den;
+        if (tq > 1e-7 && tq < 1 - 1e-7 && uq > -1e-7 && uq < 1 + 1e-7) ts.push(tq);
+      }
+    }
+    ts.sort((a, b) => a - b);
+    let cur = null;
+    for (let k = 0; k < ts.length - 1; k++){
+      const t0 = ts[k], t1 = ts[k+1];
+      if (t1 - t0 < 1e-7) continue;
+      const vis = !occluded(geo, lerp3(V[s.i], V[s.j], (t0 + t1) / 2), view.d);
+      if (cur && cur.vis === vis) cur.t1 = t1;
+      else { cur = { t0, t1, vis }; out.push(Object.assign(cur, { s })); }
+    }
+  }
+  const res = out.map(c => ({ vis: c.vis,
+    A: [c.s.A[0] + (c.s.B[0]-c.s.A[0]) * c.t0, c.s.A[1] + (c.s.B[1]-c.s.A[1]) * c.t0],
+    B: [c.s.A[0] + (c.s.B[0]-c.s.A[0]) * c.t1, c.s.A[1] + (c.s.B[1]-c.s.A[1]) * c.t1] }));
+  geo.segCache[viewName] = res;
+  return res;
+}
+
+/* ---------- colors de cares ---------- */
+const FACE_COLORS = { A:'#ff2a1f', P:'#ffee10', F:'#16e0f0', AP:'#ffab1a', FP:'#2fd12f', AF:'#1f3bff', AFP:'#c96464' };
+function faceClass(n){
+  const e = 1e-6;
+  return (n[1] < -e ? 'A' : '') + (n[0] < -e ? 'F' : '') + (n[2] > e ? 'P' : '');
+}
+const CLASS_ORDER = ['A','P','F','AP','FP','AF','AFP'];
+function shadeColor(n){
+  const top = Math.max(0, n[2]), front = Math.max(0, -n[1]), left = Math.max(0, -n[0]);
+  const s = top + front + left || 1;
+  const mix = (c1, c2, c3) => Math.round((c1*top + c2*front + c3*left) / s);
+  return `rgb(${mix(255,232,201)},${mix(253,214,170)},${mix(246,182,138)})`;
+}
+function faceFill(n, mode){
+  if (mode === 'white') return '#ffffff';
+  if (mode === 'color'){ const c = FACE_COLORS[(faceClass(n))]; return c || '#dddddd'; }
+  return shadeColor(n);
+}
+
+/* ---------- ordenació de cares (BSP) per pintar en vectorial ---------- */
+function splitPoly(poly, n, d, F, B, C){
+  const ds = poly.pts.map(p => dot(n, p) - d), E = 1e-7;
+  let pos = false, neg = false;
+  ds.forEach(x => { if (x > E) pos = true; if (x < -E) neg = true; });
+  if (!pos && !neg) return C.push(poly);
+  if (!neg) return F.push(poly);
+  if (!pos) return B.push(poly);
+  const f = [], b = [], k = poly.pts.length;
+  for (let i = 0; i < k; i++){
+    const j = (i + 1) % k, pi = poly.pts[i], pj = poly.pts[j], di = ds[i], dj = ds[j];
+    if (di >= -E) f.push(pi);
+    if (di <= E) b.push(pi);
+    if ((di > E && dj < -E) || (di < -E && dj > E)){ const q = lerp3(pi, pj, di / (di - dj)); f.push(q); b.push(q); }
+  }
+  if (f.length >= 3) F.push({ ...poly, pts: f });
+  if (b.length >= 3) B.push({ ...poly, pts: b });
+}
+function bspBuild(polys){
+  if (!polys.length) return null;
+  const p0 = polys[0], node = { n: p0.n, d: p0.d, co: [p0], f: null, b: null };
+  const F = [], B = [];
+  for (let i = 1; i < polys.length; i++) splitPoly(polys[i], p0.n, p0.d, F, B, node.co);
+  node.f = bspBuild(F); node.b = bspBuild(B);
+  return node;
+}
+function bspOrder(node, D, out){
+  if (!node) return out;
+  if (dot(node.n, D) > 0){ bspOrder(node.b, D, out); out.push(...node.co); bspOrder(node.f, D, out); }
+  else { bspOrder(node.f, D, out); bspOrder(node.b, D, out); }
+  return out;
+}
+
+/* =====================================================================
+   DIBUIX SVG
+   ===================================================================== */
+function svgWrap(minx, miny, w, h, scale, body, fluid){
+  const size = fluid ? 'width="100%" height="100%"' : `width="${f2(w*scale)}mm" height="${f2(h*scale)}mm"`;
+  return { svg: `<svg xmlns="http://www.w3.org/2000/svg" ${size} viewBox="${f2(minx)} ${f2(miny)} ${f2(w)} ${f2(h)}" preserveAspectRatio="xMidYMid meet">${body}</svg>`, wmm: w*scale, hmm: h*scale };
+}
+// Perspectiva isomètrica. o: {fill:'white'|'shade'|'color', arrows, lang, maxW, maxH (mm), maxScale (mm/unitat), fluid}
+function isoSVG(geo, o = {}){
+  const V = VIEWS.iso, lang = o.lang || uiLang, fill = o.fill || 'white';
+  const P = geo.verts.map(V.f);
+  const pts = [...P];
+  const arrows = [];
+  if (o.arrows){
+    const b = geo.bbox, xc = (b.min[0] + b.max[0]) / 2, yc = (b.min[1] + b.max[1]) / 2, z0 = b.min[2] + 0.3;
+    let top = Infinity, sx = 0; P.forEach(p => { if (p[1] < top) top = p[1]; }); sx = (V.f([xc, yc, 0]))[0];
+    arrows.push({ head: [sx - 0.5, top - 0.3], tail: [sx - 0.5, top - 1.5], label: t('aP', lang), lp: [sx - 0.5, top - 1.75], rot: 0, anchor: 'middle' });
+    arrows.push({ head: V.f([xc, b.min[1] - 0.35, z0]), tail: V.f([xc, b.min[1] - 1.6, z0]), label: t('aA', lang), lp: V.f([xc, b.min[1] - 1.85, z0]), rot: 30, anchor: 'start' });
+    arrows.push({ head: V.f([b.min[0] - 0.35, yc, z0]), tail: V.f([b.min[0] - 1.6, yc, z0]), label: t('aF', lang), lp: V.f([b.min[0] - 1.85, yc, z0]), rot: -30, anchor: 'end' });
+    const fs = 0.42;
+    arrows.forEach(a => {
+      pts.push(a.head, a.tail, a.lp);
+      const len = a.label.length * fs * 0.68, r = a.rot * Math.PI / 180, dir = a.anchor === 'end' ? -1 : 1;
+      if (a.anchor === 'middle'){ pts.push([a.lp[0] - len/2, a.lp[1] - fs], [a.lp[0] + len/2, a.lp[1] - fs]); }
+      else pts.push([a.lp[0] + Math.cos(r) * len * dir, a.lp[1] + Math.sin(r) * len * dir], [a.lp[0] + Math.cos(r) * len * dir, a.lp[1] + Math.sin(r) * len * dir + fs]);
+    });
+  }
+  let minx = Infinity, miny = Infinity, maxx = -Infinity, maxy = -Infinity;
+  pts.forEach(p => { minx = Math.min(minx, p[0]); maxx = Math.max(maxx, p[0]); miny = Math.min(miny, p[1]); maxy = Math.max(maxy, p[1]); });
+  const pad = 0.15; minx -= pad; miny -= pad; maxx += pad; maxy += pad;
+  const w = maxx - minx, h = maxy - miny;
+  const scale = Math.min(o.maxScale || 9, (o.maxW || 80) / w, (o.maxH || 80) / h);
+  const sw = (o.lineMM || 0.45) / scale;
+  let body = '';
+  const front = geo.tris.filter(tr => dot(tr.n, V.d) > 1e-6).map(tr => ({ pts: tr.p, n: tr.n, d: tr.d }));
+  const order = bspOrder(bspBuild(front), V.d, []);
+  for (const poly of order){
+    const c = faceFill(poly.n, fill);
+    body += `<polygon points="${poly.pts.map(p => V.f(p).map(f2).join(',')).join(' ')}" fill="${c}" stroke="${c}" stroke-width="${f2(sw*0.5)}" stroke-linejoin="round"/>`;
+  }
+  const segs = visibleSegments(geo, 'iso').filter(s => s.vis);
+  body += `<g stroke="${fill === 'color' ? '#5a1010' : '#1a1a1a'}" stroke-width="${f2(sw)}" stroke-linecap="round">` + segs.map(s => `<line x1="${f2(s.A[0])}" y1="${f2(s.A[1])}" x2="${f2(s.B[0])}" y2="${f2(s.B[1])}"/>`).join('') + '</g>';
+  if (o.arrows){
+    const fs = 0.42, ah = 2.0 / scale;
+    body += `<g fill="#111" stroke="#111" stroke-width="${f2(sw*0.7)}" font-family="Helvetica,Arial,sans-serif" font-size="${fs}">`;
+    arrows.forEach(a => {
+      const dx = a.head[0] - a.tail[0], dy = a.head[1] - a.tail[1], L = Math.hypot(dx, dy), ux = dx / L, uy = dy / L;
+      const bx = a.head[0] - ux * ah, by = a.head[1] - uy * ah;
+      body += `<line x1="${f2(a.tail[0])}" y1="${f2(a.tail[1])}" x2="${f2(bx)}" y2="${f2(by)}"/>`;
+      body += `<polygon stroke="none" points="${f2(a.head[0])},${f2(a.head[1])} ${f2(bx - uy*ah*0.38)},${f2(by + ux*ah*0.38)} ${f2(bx + uy*ah*0.38)},${f2(by - ux*ah*0.38)}"/>`;
+      body += `<text stroke="none" x="${f2(a.lp[0])}" y="${f2(a.lp[1])}" text-anchor="${a.anchor}" transform="rotate(${a.rot} ${f2(a.lp[0])} ${f2(a.lp[1])})" ${a.anchor === 'middle' ? '' : 'dominant-baseline="middle"'}>${esc(a.label)}</text>`;
+    });
+    body += '</g>';
+  }
+  return svgWrap(minx, miny, w, h, scale, body, o.fluid);
+}
+function dims(geo){ const b = geo.bbox; return { nx: Math.round(b.max[0]-b.min[0]), ny: Math.round(b.max[1]-b.min[1]), nz: Math.round(b.max[2]-b.min[2]) }; }
+// Segments d'una vista amb coordenades locals (0..ample, 0..alt).
+function localView(geo, view){
+  const b = geo.bbox, segs = visibleSegments(geo, view);
+  const off = { alzado: [-b.min[0], b.max[2]], planta: [-b.min[0], b.max[1]], perfil: [b.max[1], b.max[2]] }[view];
+  return segs.map(s => ({ vis: s.vis, A: [s.A[0] + off[0], s.A[1] + off[1]], B: [s.B[0] + off[0], s.B[1] + off[1]] }));
+}
+function linesSVG(segs, ox, oy, sw, hidden){
+  let h = '', v = '';
+  segs.forEach(s => {
+    const l = `<line x1="${f2(s.A[0]+ox)}" y1="${f2(s.A[1]+oy)}" x2="${f2(s.B[0]+ox)}" y2="${f2(s.B[1]+oy)}"/>`;
+    if (s.vis) v += l; else if (hidden) h += l;
+  });
+  return (h ? `<g stroke="#222" stroke-width="${f2(sw*0.6)}" stroke-dasharray="${f2(sw*3)} ${f2(sw*2)}" stroke-linecap="butt">${h}</g>` : '') +
+         `<g stroke="#111" stroke-width="${f2(sw)}" stroke-linecap="round">${v}</g>`;
+}
+// Quadrícula amb la disposició europea: alçat a dalt a l'esquerra, planta a sota, perfil esquerre a la dreta.
+// o: {cell (mm), show:{alzado,planta,perfil}, labels, lang, hidden, missing}
+function gridSVG(geo, o){
+  const { nx, ny, nz } = dims(geo), W = nx + ny + 3, H = nz + ny + 3, c = o.cell, lang = o.lang;
+  const pos = { alzado: [1, 1, nx, nz], planta: [1, nz + 2, nx, ny], perfil: [nx + 2, 1, ny, nz] };
+  let body = `<rect x="0" y="0" width="${W}" height="${H}" fill="#fff"/><g stroke="#b9c3cf" stroke-width="${f2(0.16/c)}">`;
+  for (let i = 0; i <= W; i++) body += `<line x1="${i}" y1="0" x2="${i}" y2="${H}"/>`;
+  for (let j = 0; j <= H; j++) body += `<line x1="0" y1="${j}" x2="${W}" y2="${j}"/>`;
+  body += '</g>';
+  const sw = 0.55 / c;
+  for (const v of ['alzado', 'planta', 'perfil']){
+    const [x, y] = pos[v];
+    if (o.show[v]) body += linesSVG(localView(geo, v), x, y, sw, o.hidden);
+  }
+  if (o.labels){
+    const fs = Math.min(0.42, 2.3 / c);
+    const L = { alzado: t('vA', lang), planta: t('vP', lang), perfil: t('vFs', lang) };
+    body += `<g font-family="Helvetica,Arial,sans-serif" font-size="${f2(fs)}" fill="#7d8896">`;
+    for (const v of ['alzado', 'planta', 'perfil']){
+      const [x, y, w, h] = pos[v];
+      const miss = o.missing === v;
+      body += `<text x="${f2(x + w/2)}" y="${f2(y + h + 0.62)}" text-anchor="middle" ${miss ? 'font-weight="700" fill="#c0392b"' : ''}>${esc(L[v])}${miss ? ' ?' : ''}</text>`;
+    }
+    body += '</g>';
+  }
+  return svgWrap(0, 0, W, H, c, body, o.fluid);
+}
+function singleViewSVG(geo, view){
+  const segs = localView(geo, view);
+  const { nx, ny, nz } = dims(geo);
+  const [w, h] = { alzado: [nx, nz], planta: [nx, ny], perfil: [ny, nz] }[view];
+  const pad = 0.3;
+  let body = `<g stroke="#e6dccb" stroke-width="0.02">`;
+  for (let i = 0; i <= w; i++) body += `<line x1="${i}" y1="0" x2="${i}" y2="${h}"/>`;
+  for (let j = 0; j <= h; j++) body += `<line x1="0" y1="${j}" x2="${w}" y2="${j}"/>`;
+  body += '</g>' + linesSVG(segs, 0, 0, 0.06, false);
+  return svgWrap(-pad, -pad, w + 2*pad, h + 2*pad, 1, body, true).svg;
+}
+
+/* =====================================================================
+   PECES
+   ===================================================================== */
+function newPiece(){ return { id: uid(), name: '', level: 1, N: 4, H: 4, cubes: [], cuts: [], created: Date.now(), updated: Date.now() }; }
+function rotatePiece(p){ // 90° al voltant de z dins de la base N×N
+  const N = p.N;
+  p.cubes = p.cubes.map(([x, y, z]) => [N - 1 - y, x, z]);
+  const rp = q => [N - q[1], q[0], q[2]];
+  p.cuts = p.cuts.map(c => { const a = rp(c.box[0]), b = rp(c.box[1]);
+    return { pts: c.pts.map(rp), side: c.side, box: [[Math.min(a[0], b[0]), Math.min(a[1], b[1]), a[2]], [Math.max(a[0], b[0]), Math.max(a[1], b[1]), b[2]]] }; });
+  return p;
+}
+function mirrorPiece(p){
+  const N = p.N;
+  p.cubes = p.cubes.map(([x, y, z]) => [N - 1 - x, y, z]);
+  const mp = q => [N - q[0], q[1], q[2]];
+  p.cuts = p.cuts.map(c => ({ pts: c.pts.map(mp), side: -c.side, box: [[N - c.box[1][0], c.box[0][1], c.box[0][2]], [N - c.box[0][0], c.box[1][1], c.box[1][2]]] }));
+  return p;
+}
+function thumbOf(p){
+  const g = getGeo(p);
+  return g ? isoSVG(g, { fill: 'shade', fluid: true, lineMM: 0.5, maxScale: 10, maxW: 60, maxH: 45 }).svg : '';
+}
+// Peces d'exemple
+function mkCut(pts, box, removePoint){ return { pts, box, side: sideOf(pts, removePoint) }; }
+function samplePieces(){
+  const L = n => T[n][li(uiLang)];
+  const fill = (xs, ys, zs) => { const r = []; for (const x of xs) for (const y of ys) for (const z of zs) r.push([x, y, z]); return r; };
+  const s = [];
+  s.push({ ...newPiece(), name: L('sample1'), level: 1, N: 3, H: 3,
+    cubes: [...fill([0,1,2],[0,1],[0]), ...fill([1,2],[1],[1]), [2,1,2]],
+    cuts: [ mkCut([[1,1,1],[1,2,1],[2,1,2]], [[1,1,1],[2,2,2]], [1,1,2]),
+            mkCut([[3,1,3],[2,2,3],[2,1,2]], [[2,1,2],[3,2,3]], [2,1,3]) ] });
+  s.push({ ...newPiece(), name: L('sample2'), level: 2, N: 3, H: 3,
+    cubes: [...fill([0,1,2],[0,1],[0]), ...fill([0,1,2],[1],[1]), [2,1,2]],
+    cuts: [ mkCut([[0,1,1],[3,1,1],[0,2,2]], [[0,1,1],[2,2,2]], [0,1,2]),
+            mkCut([[1,0,1],[0,1,1],[0,0,0]], [[0,0,0],[1,1,1]], [0,0,1]) ] });
+  s.push({ ...newPiece(), name: L('sample3'), level: 2, N: 3, H: 3,
+    cubes: [...fill([0],[0,1],[0]), ...fill([1],[0,1],[0,1]), ...fill([2],[0,1],[0,1,2])],
+    cuts: [ mkCut([[0,0,0],[0,2,0],[1,0,1]], [[0,0,0],[1,2,1]], [0,0,1]),
+            mkCut([[2,0,2],[2,2,2],[3,0,3]], [[2,0,2],[3,2,3]], [2,0,3]) ] });
+  s.push({ ...newPiece(), name: L('sample4'), level: 3, N: 3, H: 3,
+    cubes: [...fill([0,1,2],[0,1,2],[0]), ...fill([1,2],[1,2],[1]), [2,2,2], [2,1,2]],
+    cuts: [ mkCut([[0,0,1],[1,0,0],[0,1,0]], [[0,0,0],[1,1,1]], [0,0,1]),
+            mkCut([[1,1,2],[3,1,2],[1,2,1]], [[1,1,1],[3,2,2]], [1,1,2]),
+            mkCut([[3,1,3],[2,2,3],[2,1,2]], [[2,1,2],[3,2,3]], [2,1,3]) ] });
+  return s;
+}
+Object.assign(T, {
+  sample1:['Torre amb tall','Torre con corte','Torre con corte'], sample2:['Bloc amb rampa','Bloque con rampa','Bloque con rampla'],
+  sample3:['Esglaons inclinats','Escalones inclinados','Chanzos inclinados'], sample4:['Peça combinada','Pieza combinada','Peza combinada'],
+});
+
+/* =====================================================================
+   EDITOR 3D
+   ===================================================================== */
+const ED = { piece: null, dirty: false, mode: 'add', undo: [], redo: [], cutPts: [], cutBox: null, ready: false };
+let renderer, scene, camera, controls, solidGroup, floorGroup, hoverMesh, pointsGroup, cutGroup;
+function initEditor3D(){
+  const host = $('#ed-canvas');
+  renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer.setPixelRatio(Math.min(2, window.devicePixelRatio));
+  host.appendChild(renderer.domElement);
+  scene = new THREE.Scene(); scene.background = new THREE.Color(0xfbf8f1);
+  camera = new THREE.PerspectiveCamera(32, 1, 0.1, 300); camera.up.set(0, 0, 1);
+  controls = new OrbitControls(camera, renderer.domElement); controls.enableDamping = true;
+  solidGroup = new THREE.Group(); floorGroup = new THREE.Group(); pointsGroup = new THREE.Group(); cutGroup = new THREE.Group();
+  scene.add(solidGroup, floorGroup, pointsGroup, cutGroup);
+  hoverMesh = new THREE.Mesh(new THREE.BoxGeometry(1.002, 1.002, 1.002), new THREE.MeshBasicMaterial({ color: 0x2f9e5b, transparent: true, opacity: 0.35, depthWrite: false }));
+  hoverMesh.visible = false; scene.add(hoverMesh);
+  new ResizeObserver(() => { const w = host.clientWidth, h = host.clientHeight; if (!w || !h) return; renderer.setSize(w, h); camera.aspect = w / h; camera.updateProjectionMatrix(); }).observe(host);
+  const loop = () => { requestAnimationFrame(loop); if ($('#editor').classList.contains('on')){ controls.update(); renderer.render(scene, camera); } };
+  loop();
+  let down = null;
+  renderer.domElement.addEventListener('pointerdown', e => { down = [e.clientX, e.clientY]; });
+  renderer.domElement.addEventListener('pointerup', e => { if (down && Math.hypot(e.clientX - down[0], e.clientY - down[1]) < 5) onClick3D(e); down = null; });
+  renderer.domElement.addEventListener('pointermove', e => { if (!down) onHover3D(e); });
+  renderer.domElement.addEventListener('pointerleave', () => { hoverMesh.visible = false; });
+  ED.ready = true;
+}
+function labelSprite(text, color = '#a8402c'){
+  const cv = document.createElement('canvas'); cv.width = 512; cv.height = 128;
+  const g = cv.getContext('2d'); g.fillStyle = color; g.font = 'bold 64px Helvetica,Arial,sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(text, 256, 64);
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(cv), depthTest: false }));
+  sp.scale.set(1.5, 0.375, 1); return sp;
+}
+function disposeGroup(g){ while (g.children.length){ const c = g.children.pop(); c.geometry && c.geometry.dispose(); if (c.material){ c.material.map && c.material.map.dispose(); c.material.dispose(); } } }
+function buildFloor(){
+  disposeGroup(floorGroup);
+  const N = ED.piece.N;
+  const pts = [];
+  for (let i = 0; i <= N; i++){ pts.push(i, 0, 0, i, N, 0, 0, i, 0, N, i, 0); }
+  const lg = new THREE.BufferGeometry(); lg.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
+  floorGroup.add(new THREE.LineSegments(lg, new THREE.LineBasicMaterial({ color: 0xc9bca5 })));
+  const plane = new THREE.Mesh(new THREE.PlaneGeometry(N, N), new THREE.MeshBasicMaterial({ color: 0xefe7d6, transparent: true, opacity: 0.55, side: THREE.DoubleSide, depthWrite: false }));
+  plane.position.set(N/2, N/2, -0.001); plane.userData.floor = true; floorGroup.add(plane);
+  const la = labelSprite('↑ ' + t('aA')); la.position.set(N/2, -0.7, 0); floorGroup.add(la);
+  const lf = labelSprite(t('aF') + ' →'); lf.position.set(-0.9, N/2, 0); floorGroup.add(lf);
+}
+function resetCamera(){
+  const N = ED.piece.N, H = ED.piece.H, c = new THREE.Vector3(N/2, N/2, H/3);
+  controls.target.copy(c);
+  const k = Math.max(N, H) * 2.6 + 4;
+  camera.position.set(c.x - k * 0.62, c.y - k * 0.78, c.z + k * 0.62);
+  controls.update();
+}
+function rebuildSolid(){
+  disposeGroup(solidGroup);
+  const geo = getGeo(ED.piece);
+  ED.geo = geo;
+  if (geo){
+    const colored = $('#ed-colored').checked;
+    const pos = [], col = [], tmp = new THREE.Color();
+    geo.tris.forEach(tr => { tmp.set(colored ? (FACE_COLORS[(faceClass(tr.n))] || '#d9d2c5') : shadeColor(tr.n)); tr.p.forEach(p => { pos.push(...p); col.push(tmp.r, tmp.g, tmp.b); }); });
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
+    const m = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ vertexColors: true, polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1, side: THREE.DoubleSide }));
+    m.userData.solid = true; solidGroup.add(m);
+    const ep = []; geo.edges.forEach(([i, j]) => ep.push(...geo.verts[i], ...geo.verts[j]));
+    const eg = new THREE.BufferGeometry(); eg.setAttribute('position', new THREE.Float32BufferAttribute(ep, 3));
+    solidGroup.add(new THREE.LineSegments(eg, new THREE.LineBasicMaterial({ color: 0x3a1a10 })));
+  }
+  renderMiniViews();
+  renderCutList();
+  if (ED.mode === 'cut') buildCutPoints();
+}
+function renderMiniViews(){
+  const geo = ED.geo, box = $('#ed-views');
+  if (!geo){ box.innerHTML = `<p class="muted small" style="grid-column:span 2">${esc(t('hintAdd'))}</p>`; return; }
+  const colored = $('#ed-colored').checked;
+  box.innerHTML =
+    `<figure class="wide">${isoSVG(geo, { fill: colored ? 'color' : 'shade', arrows: true, fluid: true, maxScale: 12, maxW: 100, maxH: 80 }).svg}</figure>` +
+    `<figure>${singleViewSVG(geo, 'alzado')}<figcaption>${esc(t('vA'))}</figcaption></figure>` +
+    `<figure>${singleViewSVG(geo, 'perfil')}<figcaption>${esc(t('vF'))}</figcaption></figure>` +
+    `<figure>${singleViewSVG(geo, 'planta')}<figcaption>${esc(t('vP'))}</figcaption></figure>` +
+    (colored ? `<figure class="legend-mini" style="font-size:11px;align-items:flex-start">${legendHTML(uiLang, true)}</figure>` : '');
+}
+function renderCutList(){
+  const ul = $('#ed-cutlist');
+  if (!ED.piece.cuts.length){ ul.innerHTML = `<li class="muted">${esc(t('noCuts'))}</li>`; return; }
+  ul.innerHTML = ED.piece.cuts.map((c, i) => `<li>${esc(t('cutN'))} ${i + 1}<button class="btn sm ghost danger" data-delcut="${i}">✕</button></li>`).join('');
+}
+function snapshot(){ ED.undo.push(JSON.stringify([ED.piece.cubes, ED.piece.cuts])); if (ED.undo.length > 100) ED.undo.shift(); ED.redo = []; ED.dirty = true; }
+function restore(s){ const [cubes, cuts] = JSON.parse(s); ED.piece.cubes = cubes; ED.piece.cuts = cuts; rebuildSolid(); }
+function hasCube(x, y, z){ return ED.piece.cubes.some(c => c[0] === x && c[1] === y && c[2] === z); }
+function inBounds(x, y, z){ return x >= 0 && y >= 0 && z >= 0 && x < ED.piece.N && y < ED.piece.N && z < ED.piece.H; }
+const raycaster = new THREE.Raycaster();
+function pick(e, objects){
+  const r = renderer.domElement.getBoundingClientRect();
+  raycaster.setFromCamera(new THREE.Vector2(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1), camera);
+  return raycaster.intersectObjects(objects, false)[0];
+}
+function targetCell(e){
+  const objs = [...solidGroup.children.filter(o => o.userData.solid), ...floorGroup.children.filter(o => o.userData.floor)];
+  const hit = pick(e, objs);
+  if (!hit) return null;
+  const p = hit.point;
+  if (hit.object.userData.floor){
+    if (ED.mode !== 'add') return null;
+    return [Math.floor(p.x), Math.floor(p.y), 0];
+  }
+  const n = hit.face.normal.clone();
+  const s = ED.mode === 'add' ? 0.5 : -0.5;
+  return [Math.floor(p.x + n.x * s), Math.floor(p.y + n.y * s), Math.floor(p.z + n.z * s)];
+}
+function onHover3D(e){
+  if (ED.mode === 'cut'){ hoverMesh.visible = false; return; }
+  const c = targetCell(e);
+  const ok = c && inBounds(...c) && (ED.mode === 'add' ? !hasCube(...c) : hasCube(...c));
+  hoverMesh.visible = !!ok;
+  if (ok){ hoverMesh.position.set(c[0] + 0.5, c[1] + 0.5, c[2] + 0.5); hoverMesh.material.color.set(ED.mode === 'add' ? 0x2f9e5b : 0xd0362a); }
+}
+function onClick3D(e){
+  if (ED.mode === 'cut') return pickCutPoint(e);
+  const c = targetCell(e);
+  if (!c || !inBounds(...c)) return;
+  if (ED.mode === 'add' && !hasCube(...c)){ snapshot(); ED.piece.cubes.push(c); }
+  else if (ED.mode === 'remove' && hasCube(...c)){ snapshot(); ED.piece.cubes = ED.piece.cubes.filter(q => !(q[0] === c[0] && q[1] === c[1] && q[2] === c[2])); }
+  else return;
+  rebuildSolid(); onHover3D(e);
+}
+/* ---------- tall per 3 punts ---------- */
+function buildCutPoints(){
+  disposeGroup(pointsGroup);
+  if (ED.mode !== 'cut') return;
+  const set = new Map();
+  const add = p => { const k = p.join(','); if (!set.has(k)) set.set(k, p); };
+  ED.piece.cubes.forEach(([x, y, z]) => { for (const dx of [0, 1]) for (const dy of [0, 1]) for (const dz of [0, 1]) add([x + dx, y + dy, z + dz]); });
+  const sg = new THREE.SphereGeometry(0.075, 12, 8);
+  for (const p of set.values()){
+    const sel = ED.cutPts.some(q => q.join(',') === p.join(','));
+    const m = new THREE.Mesh(sg, new THREE.MeshBasicMaterial({ color: sel ? 0xff7a00 : 0x2b3a55, depthTest: true }));
+    if (sel) m.scale.setScalar(1.7);
+    m.position.set(...p); m.userData.p = p; pointsGroup.add(m);
+  }
+}
+function pickCutPoint(e){
+  if (ED.cutPts.length >= 3) return;
+  // el punt més proper al clic en pantalla (tolerància de 16 px); en cas d'empat, el més proper a la càmera
+  const r = renderer.domElement.getBoundingClientRect();
+  let best = null;
+  for (const m of pointsGroup.children){
+    const v = m.position.clone().project(camera);
+    const sx = (v.x + 1) / 2 * r.width + r.left, sy = (1 - v.y) / 2 * r.height + r.top;
+    const dpx = Math.hypot(sx - e.clientX, sy - e.clientY);
+    if (dpx < 16 && (!best || dpx < best.dpx - 3 || (Math.abs(dpx - best.dpx) <= 3 && v.z < best.z))) best = { dpx, z: v.z, p: m.userData.p };
+  }
+  if (!best) return;
+  const p = best.p, k = p.join(',');
+  const i = ED.cutPts.findIndex(q => q.join(',') === k);
+  if (i >= 0) ED.cutPts.splice(i, 1); else ED.cutPts.push(p);
+  if (ED.cutPts.length === 3){
+    const { n } = planeOf(ED.cutPts);
+    if (Math.hypot(...n) < 1e-9){ toast(t('errCollinear')); ED.cutPts = []; }
+    else if ([0, 1, 2].filter(k2 => Math.abs(n[k2]) < 1e-9).length >= 2){ toast(t('errFlat')); ED.cutPts = []; }
+    else {
+      const mn = [0, 1, 2].map(k2 => Math.min(...ED.cutPts.map(q => q[k2]))), mx = [0, 1, 2].map(k2 => Math.max(...ED.cutPts.map(q => q[k2])));
+      for (let k2 = 0; k2 < 3; k2++) if (mn[k2] === mx[k2]){ mn[k2] = 0; mx[k2] = k2 === 2 ? ED.piece.H : ED.piece.N; }
+      ED.cutBox = [mn, mx];
+      openCutPanel();
+    }
+  }
+  buildCutPoints();
+  updateHint();
+}
+function openCutPanel(){
+  const lab = ['X', 'Y', 'Z'];
+  $('#ed-boxin').innerHTML = `<span></span><span class="muted">min</span><span class="muted">max</span>` +
+    lab.map((L, k) => `<b>${L}</b><input type="number" data-bk="${k}" data-bi="0" value="${ED.cutBox[0][k]}" min="0" max="${k === 2 ? ED.piece.H : ED.piece.N}"><input type="number" data-bk="${k}" data-bi="1" value="${ED.cutBox[1][k]}" min="0" max="${k === 2 ? ED.piece.H : ED.piece.N}">`).join('');
+  $('#ed-cutpanel').classList.add('on');
+  previewCut();
+}
+function closeCutPanel(){ $('#ed-cutpanel').classList.remove('on'); ED.cutPts = []; ED.cutBox = null; disposeGroup(cutGroup); buildCutPoints(); updateHint(); }
+function regionMesh(side, color){
+  const cut = { pts: ED.cutPts, box: ED.cutBox, side };
+  const solid = buildManifold(ED.piece.cubes, ED.piece.cuts);
+  const reg = cutRegion(cut);
+  const inter = solid.intersect(reg);
+  solid.delete(); reg.delete();
+  const empty = inter.isEmpty();
+  let mesh = null;
+  if (!empty){
+    const { verts, tris } = meshOf(inter);
+    const pos = []; tris.forEach(tr => tr.forEach(i => pos.push(...verts[i])));
+    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    mesh = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.55, depthWrite: false, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }));
+  }
+  inter.delete();
+  return mesh;
+}
+function previewCut(){
+  disposeGroup(cutGroup);
+  const [a, b] = ED.cutBox;
+  const bg = new THREE.BoxGeometry(b[0]-a[0], b[1]-a[1], b[2]-a[2]);
+  const box = new THREE.LineSegments(new THREE.EdgesGeometry(bg), new THREE.LineBasicMaterial({ color: 0xff7a00 }));
+  bg.dispose();
+  box.position.set((a[0]+b[0])/2, (a[1]+b[1])/2, (a[2]+b[2])/2); cutGroup.add(box);
+  // polígon del pla dins la caixa
+  const { n, d } = planeOf(ED.cutPts), P = [];
+  const corners = []; for (const x of [a[0], b[0]]) for (const y of [a[1], b[1]]) for (const z of [a[2], b[2]]) corners.push([x, y, z]);
+  for (let i = 0; i < 8; i++) for (let j = i + 1; j < 8; j++){
+    const ci = corners[i], cj = corners[j];
+    if ([0, 1, 2].filter(k => ci[k] !== cj[k]).length !== 1) continue;
+    const di = dot(n, ci) - d, dj = dot(n, cj) - d;
+    if ((di <= 0 && dj >= 0) || (di >= 0 && dj <= 0)){ if (di === dj) continue; P.push(lerp3(ci, cj, di / (di - dj))); }
+  }
+  if (P.length >= 3){
+    const cen = P.reduce((s, p) => [s[0]+p[0]/P.length, s[1]+p[1]/P.length, s[2]+p[2]/P.length], [0, 0, 0]);
+    const nn = norm(n), u = norm(sub(P[0], cen)), v = cross(nn, u);
+    P.sort((p, q) => Math.atan2(dot(sub(p, cen), v), dot(sub(p, cen), u)) - Math.atan2(dot(sub(q, cen), v), dot(sub(q, cen), u)));
+    const pos = []; for (let i = 1; i < P.length - 1; i++) pos.push(...P[0], ...P[i], ...P[i+1]);
+    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    cutGroup.add(new THREE.Mesh(g, new THREE.MeshBasicMaterial({ color: 0xffa040, transparent: true, opacity: 0.25, side: THREE.DoubleSide, depthWrite: false })));
+  }
+  const red = regionMesh(1, 0xff2a1f), blue = regionMesh(-1, 0x2f5bff);
+  if (red) cutGroup.add(red);
+  if (blue) cutGroup.add(blue);
+  $('#ed-cut-red').style.display = red ? '' : 'none';
+  $('#ed-cut-blue').style.display = blue ? '' : 'none';
+}
+function applyCut(side){
+  snapshot();
+  ED.piece.cuts.push({ pts: ED.cutPts.map(p => [...p]), box: clone(ED.cutBox), side });
+  closeCutPanel();
+  rebuildSolid();
+}
+function setMode(m){
+  ED.mode = m;
+  document.querySelectorAll('[data-mode]').forEach(b => b.classList.toggle('on', b.dataset.mode === m));
+  if (m !== 'cut') closeCutPanel(); else buildCutPoints();
+  hoverMesh.visible = false;
+  updateHint();
+}
+function updateHint(){
+  let h = ED.mode === 'add' ? t('hintAdd') : ED.mode === 'remove' ? t('hintRemove') : t('hintCut') + (ED.cutPts.length ? ` (${ED.cutPts.length}/3)` : '');
+  $('#ed-hint').textContent = h;
+}
+function fillSizeSelects(){
+  $('#ed-n').innerHTML = [2, 3, 4, 5, 6].map(n => `<option value="${n}">${n}×${n}</option>`).join('');
+  $('#ed-h').innerHTML = [2, 3, 4, 5, 6].map(n => `<option value="${n}">${n}</option>`).join('');
+}
+function openEditor(piece){
+  if (!ED.ready) initEditor3D();
+  ED.piece = clone(piece); ED.undo = []; ED.redo = []; ED.dirty = false; ED.cutPts = [];
+  $('#ed-name').value = ED.piece.name; $('#ed-level').value = ED.piece.level;
+  $('#ed-n').value = ED.piece.N; $('#ed-h').value = ED.piece.H;
+  $('#pieces-lib').style.display = 'none'; $('#editor').classList.add('on');
+  buildFloor(); resetCamera(); setMode('add'); rebuildSolid();
+}
+function closeEditor(force){
+  if (!force && ED.dirty && !confirm(t('confirmLeave'))) return false;
+  closeCutPanel();
+  $('#editor').classList.remove('on'); $('#pieces-lib').style.display = '';
+  ED.piece = null; ED.dirty = false;
+  renderPieces();
+  return true;
+}
+function bindEditor(){
+  fillSizeSelects();
+  document.querySelectorAll('[data-mode]').forEach(b => b.onclick = () => setMode(b.dataset.mode));
+  $('#ed-undo').onclick = () => { if (!ED.undo.length) return; ED.redo.push(JSON.stringify([ED.piece.cubes, ED.piece.cuts])); restore(ED.undo.pop()); };
+  $('#ed-redo').onclick = () => { if (!ED.redo.length) return; ED.undo.push(JSON.stringify([ED.piece.cubes, ED.piece.cuts])); restore(ED.redo.pop()); };
+  $('#ed-rot').onclick = () => { snapshot(); rotatePiece(ED.piece); rebuildSolid(); };
+  $('#ed-mirror').onclick = () => { snapshot(); mirrorPiece(ED.piece); rebuildSolid(); };
+  $('#ed-reset').onclick = resetCamera;
+  $('#ed-clear').onclick = () => { if (!confirm(t('confirmDel'))) return; snapshot(); ED.piece.cubes = []; ED.piece.cuts = []; rebuildSolid(); };
+  $('#ed-colored').onchange = rebuildSolid;
+  $('#ed-name').oninput = e => { ED.piece.name = e.target.value; ED.dirty = true; };
+  $('#ed-level').onchange = e => { ED.piece.level = +e.target.value; ED.dirty = true; };
+  const resize = () => {
+    const N = +$('#ed-n').value, H = +$('#ed-h').value;
+    const out = ED.piece.cubes.filter(([x, y, z]) => x >= N || y >= N || z >= H);
+    if (out.length && !confirm(t('confirmShrink'))){ $('#ed-n').value = ED.piece.N; $('#ed-h').value = ED.piece.H; return; }
+    snapshot();
+    ED.piece.N = N; ED.piece.H = H;
+    ED.piece.cubes = ED.piece.cubes.filter(([x, y, z]) => x < N && y < N && z < H);
+    buildFloor(); resetCamera(); rebuildSolid();
+  };
+  $('#ed-n').onchange = resize; $('#ed-h').onchange = resize;
+  $('#ed-cutlist').onclick = e => { const b = e.target.closest('[data-delcut]'); if (!b) return; snapshot(); ED.piece.cuts.splice(+b.dataset.delcut, 1); rebuildSolid(); };
+  $('#ed-cut-red').onclick = () => applyCut(1);
+  $('#ed-cut-blue').onclick = () => applyCut(-1);
+  $('#ed-cut-cancel').onclick = closeCutPanel;
+  $('#ed-boxin').oninput = e => {
+    const el = e.target; if (!el.dataset.bk) return;
+    const k = +el.dataset.bk, i = +el.dataset.bi, max = k === 2 ? ED.piece.H : ED.piece.N;
+    const v = Math.max(0, Math.min(max, Math.round(+el.value || 0)));
+    const nb = clone(ED.cutBox); nb[i][k] = v;
+    if (nb[1][k] <= nb[0][k]) return;
+    ED.cutBox = nb; previewCut();
+  };
+  $('#ed-back').onclick = () => closeEditor(false);
+  $('#ed-save').onclick = async () => {
+    const p = ED.piece; if (!p.name.trim()) p.name = t('untitledPiece');
+    await savePiece(clone(p)); ED.dirty = false; toast(t('saved')); closeEditor(true);
+  };
+}
+
+/* =====================================================================
+   LLISTES (documents, peces, centres)
+   ===================================================================== */
+const fmtDate = (ms, l = uiLang) => new Date(ms).toLocaleDateString({ ca: 'ca-ES', es: 'es-ES', gl: 'gl-ES' }[l], { day: 'numeric', month: 'short', year: 'numeric' });
+function renderDocs(){
+  const box = $('#docs-list');
+  const docs = [...state.docs].sort((a, b) => b.updated - a.updated);
+  if (!docs.length){ box.innerHTML = `<div class="empty card" style="grid-column:1/-1">${esc(t('noDocs'))}</div>`; return; }
+  box.innerHTML = docs.map(d => `<div class="card dcard">
+    <div style="display:flex;justify-content:space-between;gap:8px"><span class="badge ${d.type === 'examen' ? 'exam' : ''}">${esc(t(d.type === 'examen' ? 'examen' : 'ficha'))}</span><span class="small muted">${esc(t('updated'))}: ${fmtDate(d.updated)}</span></div>
+    <div class="title">${esc(d.title || t('untitledDoc'))}</div>
+    <div class="small muted">${esc([d.subject, d.course, d.group].filter(Boolean).join(' · '))}</div>
+    <div class="pcard actions" style="padding:0;flex-direction:row"><button class="btn sm primary" data-open="${d.id}">${esc(t('open'))}</button><button class="btn sm" data-dup="${d.id}">${esc(t('duplicate'))}</button><button class="btn sm ghost danger" data-del="${d.id}">${esc(t('del'))}</button></div>
+  </div>`).join('');
+}
+function renderPieces(){
+  const box = $('#pieces-list');
+  const q = ($('#lib-search').value || '').toLowerCase(), lv = $('#lib-filter').value;
+  const list = state.pieces.filter(p => (!lv || String(p.level) === lv) && (!q || p.name.toLowerCase().includes(q))).sort((a, b) => b.updated - a.updated);
+  if (!state.pieces.length){ box.innerHTML = `<div class="empty card" style="grid-column:1/-1">${esc(t('noPieces'))}</div>`; return; }
+  box.innerHTML = list.map(p => `<div class="card pcard">
+    <div class="thumb">${thumbOf(p)}</div>
+    <div class="meta"><span class="name" title="${esc(p.name)}">${esc(p.name)}</span><span class="badge l${p.level}">${esc(t('lvl' + p.level))}</span></div>
+    <div class="actions"><button class="btn sm primary" data-edit="${p.id}">${esc(t('edit'))}</button><button class="btn sm" data-dup="${p.id}">${esc(t('duplicate'))}</button><button class="btn sm ghost danger" data-del="${p.id}">${esc(t('del'))}</button></div>
+  </div>`).join('');
+}
+async function fileToDataURL(file){
+  const url = await new Promise(r => { const fr = new FileReader(); fr.onload = () => r(fr.result); fr.readAsDataURL(file); });
+  if (file.type === 'image/svg+xml') return url;
+  const img = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = url; });
+  const s = Math.min(1, 600 / Math.max(img.width, img.height));
+  const cv = document.createElement('canvas'); cv.width = Math.round(img.width * s); cv.height = Math.round(img.height * s);
+  cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
+  return cv.toDataURL('image/png');
+}
+function renderProfiles(){
+  const box = $('#profiles-list'), act = activeProfile();
+  box.innerHTML = state.profiles.map(p => `<div class="card prof" data-pid="${p.id}">
+    <div class="toolbar" style="justify-content:space-between"><h3 style="margin:0">${esc(p.centre || t('newProfile'))} ${act && act.id === p.id ? `<span class="badge l1">${esc(t('active'))}</span>` : ''}</h3>
+      <div style="display:flex;gap:6px">${act && act.id === p.id ? '' : `<button class="btn sm" data-use="${p.id}">${esc(t('useThis'))}</button>`}<button class="btn sm ghost danger" data-delp="${p.id}">${esc(t('del'))}</button></div></div>
+    <div class="prof-grid">
+      <label class="field"><span>${esc(t('centreName'))}</span><input type="text" data-k="centre" value="${esc(p.centre)}"></label>
+      <label class="field"><span>${esc(t('teacher'))}</span><input type="text" data-k="teacher" value="${esc(p.teacher)}"></label>
+      <label class="field"><span>${esc(t('adminText'))}</span><textarea data-k="admin" rows="2">${esc(p.admin)}</textarea></label>
+      <label class="field"><span>${esc(t('defSubject'))}</span><input type="text" data-k="subject" value="${esc(p.subject)}"></label>
+      ${['logoAdmin', 'logoCentre'].map(k => `<div class="field"><span>${esc(t(k))}</span>
+        <label class="logo-drop">${p[k] ? `<img src="${p[k]}" alt="">` : `<span class="muted small">${esc(t('upload'))}</span>`}<input type="file" accept="image/*" data-logo="${k}" hidden></label>
+        ${p[k] ? `<button class="btn sm ghost danger" data-rmlogo="${k}">${esc(t('removeImg'))}</button>` : ''}</div>`).join('')}
+    </div></div>`).join('');
+}
+function renderProfileSelect(){
+  const act = activeProfile();
+  $('#sel-profile').innerHTML = state.profiles.map(p => `<option value="${p.id}" ${act && act.id === p.id ? 'selected' : ''}>${esc(p.centre || '—')}</option>`).join('');
+}
+function newProfile(data = {}){ return { id: uid(), centre: '', teacher: '', admin: '', subject: '', logoAdmin: '', logoCentre: '', ...data }; }
+
+/* =====================================================================
+   DOCUMENTS
+   ===================================================================== */
+let curDoc = null;
+function newDoc(type){
+  const pr = activeProfile();
+  return { id: uid(), type, title: '', profileId: pr ? pr.id : null, subject: pr ? pr.subject : '', course: '', group: '', term: '', date: '',
+    instructions: '', cell: 7, hidden: false, labels: true, exercises: [], created: Date.now(), updated: Date.now() };
+}
+function newExercise(kind){ return { id: uid(), kind, pieces: [], points: 2, statement: '', model: '', missing: 'perfil', showIso: false, lines: 5 }; }
+const saveCurDoc = debounce(async () => { if (curDoc) await saveDoc(curDoc); }, 500);
+const refreshPreview = debounce(() => renderPreview(), 250);
+function docChanged(){ saveCurDoc(); refreshPreview(); }
+function openDoc(d){
+  curDoc = d;
+  $('#doc-none').style.display = 'none'; $('#doc-editor').style.display = '';
+  $('#prev-lang').value = uiLang;
+  renderDocForm(); showTab('doc'); renderPreview();
+}
+function pickerHTML(ex, field){
+  if (!state.pieces.length) return `<p class="small muted">${esc(t('noPiecesYet'))}</p>`;
+  return `<div class="pick" data-pick="${ex.id}">` + state.pieces.map(p => {
+    const i = ex.pieces.indexOf(p.id);
+    return `<button type="button" class="${i >= 0 ? 'sel' : ''}" data-pp="${p.id}" title="${esc(p.name)}">${i >= 0 ? `<span class="ord">${i + 1}</span>` : ''}${thumbOf(p)}</button>`;
+  }).join('') + '</div>';
+}
+function renderDocForm(){
+  const d = curDoc, isExam = d.type === 'examen';
+  const kinds = ['vistas', 'color', 'tercera', 'text'], kName = { vistas: 'kVistas', color: 'kColor', tercera: 'kTercera', text: 'kText' };
+  $('#doc-form').innerHTML = `
+    <div class="field"><span>${esc(t('docType'))}</span><div class="seg"><button data-type="ficha" class="${!isExam ? 'on' : ''}">${esc(t('ficha'))}</button><button data-type="examen" class="${isExam ? 'on' : ''}">${esc(t('examen'))}</button></div></div>
+    <label class="field"><span>${esc(t('title'))}</span><input type="text" data-f="title" value="${esc(d.title)}"></label>
+    <label class="field"><span>${esc(t('profile'))}</span><select data-f="profileId">${state.profiles.map(p => `<option value="${p.id}" ${p.id === d.profileId ? 'selected' : ''}>${esc(p.centre || '—')}</option>`).join('')}</select></label>
+    <div class="row"><label class="field"><span>${esc(t('subject'))}</span><input type="text" data-f="subject" value="${esc(d.subject)}"></label>
+      <label class="field"><span>${esc(t('course'))}</span><input type="text" data-f="course" value="${esc(d.course)}"></label></div>
+    <div class="row"><label class="field"><span>${esc(t('group'))}</span><input type="text" data-f="group" value="${esc(d.group)}"></label>
+      ${isExam ? `<label class="field"><span>${esc(t('term'))}</span><input type="text" data-f="term" value="${esc(d.term)}"></label>` : ''}</div>
+    <label class="field"><span>${esc(t('date'))}</span><input type="date" data-f="date" value="${esc(d.date)}"><small class="muted">${esc(t('dateHint'))}</small></label>
+    <label class="field"><span>${esc(t('instructions'))}</span><textarea data-f="instructions" rows="2">${esc(d.instructions)}</textarea></label>
+    <div class="row"><label class="field"><span>${esc(t('gridSize'))}</span><select data-f="cell" data-num="1">${[5, 6, 7, 8, 9, 10].map(c => `<option value="${c}" ${c === d.cell ? 'selected' : ''}>${c} mm</option>`).join('')}</select></label></div>
+    <label class="check"><input type="checkbox" data-f="labels" ${d.labels ? 'checked' : ''}><span>${esc(t('viewLabels'))}</span></label>
+    <label class="check"><input type="checkbox" data-f="hidden" ${d.hidden ? 'checked' : ''}><span>${esc(t('hiddenLines'))}</span></label>
+    <hr class="sep"><h3>${esc(t('exercises'))}</h3>
+    <div id="ex-list">${d.exercises.map((ex, i) => `
+      <div class="excard" data-ex="${ex.id}">
+        <div class="exhead"><strong>${i + 1}.</strong>
+          <select data-xf="kind" style="width:auto;flex:1">${kinds.map(k => `<option value="${k}" ${k === ex.kind ? 'selected' : ''}>${esc(t(kName[k]))}</option>`).join('')}</select>
+          ${isExam ? `<input type="number" data-xf="points" data-num="1" value="${ex.points}" min="0" step="0.25" style="width:70px" title="${esc(t('points'))}">` : ''}
+          <button class="btn sm ghost" data-mv="-1" title="↑">↑</button><button class="btn sm ghost" data-mv="1" title="↓">↓</button><button class="btn sm ghost danger" data-rmx="1">✕</button>
+        </div>
+        <label class="field"><span>${esc(t('statement'))}</span><textarea data-xf="statement" rows="2" placeholder="${esc(t('statementPh'))}">${esc(ex.statement)}</textarea></label>
+        ${ex.kind === 'text' ? `<label class="field"><span>${esc(t('lines'))}</span><input type="number" data-xf="lines" data-num="1" value="${ex.lines}" min="0" max="30"></label>` : `
+          ${ex.kind === 'color' ? `<label class="field"><span>${esc(t('modelPiece'))}</span><select data-xf="model"><option value="">${esc(t('none'))}</option>${state.pieces.map(p => `<option value="${p.id}" ${p.id === ex.model ? 'selected' : ''}>${esc(p.name)}</option>`).join('')}</select></label>` : ''}
+          ${ex.kind === 'tercera' ? `<div class="row"><label class="field"><span>${esc(t('missingView'))}</span><select data-xf="missing">${['alzado', 'planta', 'perfil'].map(v => `<option value="${v}" ${v === ex.missing ? 'selected' : ''}>${esc(t({ alzado: 'vA', planta: 'vP', perfil: 'vF' }[v]))}</option>`).join('')}</select></label></div>
+            <label class="check"><input type="checkbox" data-xf="showIso" ${ex.showIso ? 'checked' : ''}><span>${esc(t('showIso'))}</span></label>` : ''}
+          <div class="field"><span>${esc(t('choosePieces'))}</span>${pickerHTML(ex)}</div>`}
+      </div>`).join('')}</div>
+    <div class="toolbar"><select id="add-kind" style="width:auto">${kinds.map(k => `<option value="${k}">${esc(t(kName[k]))}</option>`).join('')}</select><button class="btn" id="btn-add-ex">＋ ${esc(t('addEx'))}</button></div>`;
+}
+function bindDocForm(){
+  const form = $('#doc-form');
+  form.addEventListener('input', e => {
+    const el = e.target; if (!curDoc) return;
+    if (el.dataset.f){ curDoc[el.dataset.f] = el.type === 'checkbox' ? el.checked : el.dataset.num ? +el.value : el.value; docChanged(); }
+    else if (el.dataset.xf){
+      const ex = curDoc.exercises.find(x => x.id === el.closest('[data-ex]').dataset.ex);
+      const v = el.type === 'checkbox' ? el.checked : el.dataset.num ? +el.value : el.value;
+      ex[el.dataset.xf] = v; docChanged();
+      if (el.dataset.xf === 'kind') renderDocForm();
+    }
+  });
+  form.addEventListener('click', e => {
+    if (!curDoc) return;
+    const tb = e.target.closest('[data-type]');
+    if (tb){ curDoc.type = tb.dataset.type; renderDocForm(); docChanged(); return; }
+    if (e.target.closest('#btn-add-ex')){ curDoc.exercises.push(newExercise($('#add-kind').value)); renderDocForm(); docChanged(); return; }
+    const card = e.target.closest('[data-ex]'); if (!card) return;
+    const idx = curDoc.exercises.findIndex(x => x.id === card.dataset.ex), ex = curDoc.exercises[idx];
+    const pp = e.target.closest('[data-pp]');
+    if (pp){ const i = ex.pieces.indexOf(pp.dataset.pp); if (i >= 0) ex.pieces.splice(i, 1); else ex.pieces.push(pp.dataset.pp);
+      card.querySelector('.pick').outerHTML = pickerHTML(ex); docChanged(); return; }
+    const mv = e.target.closest('[data-mv]');
+    if (mv){ const j = idx + +mv.dataset.mv; if (j < 0 || j >= curDoc.exercises.length) return; [curDoc.exercises[idx], curDoc.exercises[j]] = [curDoc.exercises[j], curDoc.exercises[idx]]; renderDocForm(); docChanged(); return; }
+    if (e.target.closest('[data-rmx]')){ if (!confirm(t('confirmDel'))) return; curDoc.exercises.splice(idx, 1); renderDocForm(); docChanged(); }
+  });
+}
+
+/* ---------- construcció de pàgines ---------- */
+const DATE_LOC = { ca: 'ca-ES', es: 'es-ES', gl: 'gl-ES' };
+function longDate(iso, l){ if (!iso) return ''; const [y, m, d] = iso.split('-').map(Number); return new Date(y, m - 1, d).toLocaleDateString(DATE_LOC[l], { day: 'numeric', month: 'long', year: 'numeric' }); }
+function legendHTML(l, compact){
+  const N = { A: t('vA', l), P: t('vP', l), F: t('vFs', l) };
+  const label = k => k.split('').map(c => N[c]).join(' + ');
+  return `<div class="legend">${CLASS_ORDER.map(k => `<div class="sw"><i style="background:${FACE_COLORS[k]}${compact ? ';width:14px;height:10px;border:1px solid #333;display:inline-block;border-radius:2px' : ''}"></i>${esc(label(k))}</div>`).join('')}</div>`;
+}
+function fieldHTML(label, value, grow){ return `<div class="f" style="${grow ? 'flex:1' : 'max-width:45mm'}"><b>${esc(label)}:</b><span class="ln">${esc(value || '')}</span></div>`; }
+function headerHTML(doc, l, sol, model){
+  const pr = profileById(doc.profileId) || activeProfile() || newProfile();
+  const title = doc.title || t(doc.type === 'examen' ? 'examen' : 'ficha', l);
+  const date = longDate(doc.date, l);
+  if (doc.type === 'examen'){
+    return `<div class="doc-hdr">
+      <div class="top">
+        <div class="side">${pr.logoAdmin ? `<img src="${pr.logoAdmin}" alt="">` : ''}<div class="txt">${esc(pr.admin)}</div></div>
+        <div class="side right">${pr.logoCentre ? `<img src="${pr.logoCentre}" alt="">` : ''}<div class="txt"><div class="cname">${esc(pr.centre)}</div>${esc(pr.teacher)}</div></div>
+      </div>
+      <div class="mid"><div class="fields">
+        <h1><span>${esc(title)}</span><span style="display:flex;gap:2mm;align-items:center">${sol ? `<span class="solbadge">${esc(t('dSolution', l))}</span>` : ''}${model ? `<span class="model">${esc(t('dModel', l))} ${model}</span>` : ''}</span></h1>
+        <div class="frow">${fieldHTML(t('subject', l), doc.subject, true)}${fieldHTML(t('course', l), doc.course)}${fieldHTML(t('term', l), doc.term)}</div>
+        <div class="frow">${fieldHTML(t('dName', l), '', true)}</div>
+        <div class="frow">${fieldHTML(t('date', l), date, true)}${fieldHTML(t('group', l), doc.group, true)}</div>
+      </div><div class="grade">${esc(t('dGrade', l))}</div></div>
+    </div>`;
+  }
+  return `<div class="fitxa-hdr">
+    ${pr.logoCentre ? `<img src="${pr.logoCentre}" alt="">` : ''}
+    <div class="tt"><h1>${esc(title)} ${sol ? `<span class="doc-hdr"><span class="solbadge" style="font-size:8pt;vertical-align:middle">${esc(t('dSolution', l))}</span></span>` : ''}</h1><div class="sub">${esc([pr.centre, doc.subject, doc.course].filter(Boolean).join(' · '))}</div></div>
+    <div class="fs">${fieldHTML(t('dName', l), '', true)}<div class="frow" style="display:flex;gap:4mm">${fieldHTML(t('group', l), doc.group)}${fieldHTML(t('date', l), date, true)}</div></div>
+  </div>`;
+}
+const CONTENT_W = 182; // mm (A4 − marges)
+function stmtHTML(doc, ex, i, l){
+  const def = { vistas: 'stVistas', color: 'stColor', tercera: 'stTercera' }[ex.kind];
+  const txt = ex.statement || (def ? t(def, l) : '');
+  const pts = doc.type === 'examen' && ex.points ? `<span class="pts">(${String(ex.points).replace('.', ',')} ${t(ex.points == 1 ? 'dPt' : 'dPts', l)})</span>` : '';
+  return `<div class="ex-st"><span class="num">${i + 1}.</span><span class="txt">${esc(txt).replace(/\n/g, '<br>')}</span>${pts}</div>`;
+}
+function pieceFor(id, model){ const p = pieceById(id); if (!p) return null; return model === 'B' ? rotatePiece(clone(p)) : p; }
+function exItems(doc, ex, l, sol, model){
+  const items = [], letter = i => String.fromCharCode(97 + i) + ')';
+  const geos = ex.pieces.map(id => getGeo(pieceFor(id, model))).filter(Boolean);
+  if (ex.kind === 'vistas' || ex.kind === 'tercera'){
+    geos.forEach((g, i) => {
+      const { nx, ny, nz } = dims(g);
+      const W = nx + ny + 3, H = nz + ny + 3;
+      const showIso = ex.kind === 'vistas' || ex.showIso;
+      const maxGridW = showIso ? 112 : CONTENT_W - 10;
+      const cell = Math.min(doc.cell, maxGridW / W, 120 / H);
+      const show = ex.kind === 'vistas' ? { alzado: sol, planta: sol, perfil: sol } : { alzado: sol || ex.missing !== 'alzado', planta: sol || ex.missing !== 'planta', perfil: sol || ex.missing !== 'perfil' };
+      const grid = gridSVG(g, { cell, show, labels: doc.labels || ex.kind === 'tercera', lang: l, hidden: sol && doc.hidden, missing: ex.kind === 'tercera' && !sol ? ex.missing : null });
+      const iso = showIso ? isoSVG(g, { fill: 'white', arrows: true, lang: l, maxW: CONTENT_W - grid.wmm - 14, maxH: Math.max(grid.hmm, 45), maxScale: 11 }) : null;
+      items.push(`<div class="prow"><span class="lbl">${letter(i)}</span>${iso ? `<div class="iso">${iso.svg}</div>` : ''}<div class="grid">${grid.svg}</div></div>`);
+    });
+  } else if (ex.kind === 'color'){
+    const mp = ex.model && getGeo(pieceFor(ex.model, model));
+    if (mp) items.push(`<div class="modelrow"><div>${isoSVG(mp, { fill: 'color', arrows: true, lang: l, maxW: 80, maxH: 58, maxScale: 9 }).svg}</div>${legendHTML(l)}</div>`);
+    else items.push(`<div class="modelrow">${legendHTML(l)}</div>`);
+    for (let i = 0; i < geos.length; i += 2){
+      items.push(`<div class="pairs">${[0, 1].map(k => geos[i + k] ? `<div class="cell"><span class="lbl" style="font-weight:700">${letter(i + k)}</span>${isoSVG(geos[i + k], { fill: sol ? 'color' : 'white', arrows: true, lang: l, maxW: 82, maxH: 70, maxScale: 10 }).svg}</div>` : '<div></div>').join('')}</div>`);
+    }
+  } else if (ex.kind === 'text'){
+    items.push(`<div class="lines">${'<div></div>'.repeat(Math.max(0, ex.lines | 0))}</div>`);
+  }
+  return items;
+}
+function docBlocks(doc, l, sol, model){
+  const blocks = [headerHTML(doc, l, sol, model)];
+  if (doc.instructions && !sol) blocks.push(`<div class="instr">${esc(doc.instructions).replace(/\n/g, '<br>')}</div>`);
+  doc.exercises.forEach((ex, i) => {
+    const st = stmtHTML(doc, ex, i, l), items = exItems(doc, ex, l, sol, model);
+    blocks.push(`<div class="exblock">${st}${items[0] || ''}</div>`);
+    items.slice(1).forEach(h => blocks.push(`<div class="exblock">${h}</div>`));
+  });
+  return blocks;
+}
+function paginate(doc, l, sol, model){
+  const pr = profileById(doc.profileId) || activeProfile() || newProfile();
+  const measure = $('#measure'); measure.innerHTML = '';
+  const pages = [];
+  const mkPage = () => {
+    const pg = document.createElement('div'); pg.className = 'page';
+    pg.innerHTML = `<div class="page-body"></div><div class="page-foot"><span></span><span></span></div>`;
+    measure.appendChild(pg); pages.push(pg); return pg.firstChild;
+  };
+  let body = mkPage();
+  for (const html of docBlocks(doc, l, sol, model)){
+    const tmp = document.createElement('div'); tmp.innerHTML = html; const el = tmp.firstElementChild;
+    body.appendChild(el);
+    if (body.scrollHeight > body.clientHeight + 1 && body.children.length > 1){
+      body.removeChild(el);
+      body = mkPage();
+      body.insertAdjacentHTML('beforeend', `<div class="mini-head"><span>${esc([pr.centre, doc.title].filter(Boolean).join(' · '))}</span><span>${model ? esc(t('dModel', l) + ' ' + model) : ''}${sol ? ' · ' + esc(t('dSolution', l)) : ''}</span></div>`);
+      body.appendChild(el);
+    }
+  }
+  pages.forEach((pg, i) => {
+    const sp = pg.querySelectorAll('.page-foot span');
+    sp[0].textContent = [pr.centre, model ? t('dModel', l) + ' ' + model : ''].filter(Boolean).join(' · ');
+    sp[1].textContent = `${t('dPage', l)} ${i + 1} ${t('dOf', l)} ${pages.length}`;
+  });
+  measure.innerHTML = '';
+  return pages;
+}
+function renderPreview(){
+  if (!curDoc || !MF) return;
+  const box = $('#doc-preview');
+  const l = $('#prev-lang').value, sol = $('#prev-mode').value === 'sol';
+  const pages = paginate(curDoc, l, sol, null);
+  box.innerHTML = '';
+  const avail = $('#doc-preview-wrap').clientWidth - 40;
+  box.style.setProperty('--pz', Math.min(1, avail / 794).toFixed(3));
+  pages.forEach(p => box.appendChild(p));
+}
+function exportPDF(){
+  const l = $('#exp-lang').value, content = $('#exp-content').value, isExam = curDoc.type === 'examen';
+  const models = isExam ? ($('#exp-modelb').checked ? ['A', 'B'] : ['A']) : [null];
+  const showModel = isExam && models.length > 1 ? m => m : () => null;
+  const root = $('#print-root'); root.innerHTML = '';
+  const sets = [];
+  if (content !== 'sol') models.forEach(m => sets.push([false, m]));
+  if (content !== 'st') models.forEach(m => sets.push([true, m]));
+  sets.forEach(([sol, m]) => paginate(curDoc, l, sol, showModel(m) || (m === 'B' ? 'B' : null)).forEach(p => root.appendChild(p)));
+  const oldTitle = document.title;
+  document.title = (curDoc.title || t(isExam ? 'examen' : 'ficha', l)).replace(/[\\/:*?"<>|]/g, '');
+  setTimeout(() => { window.print(); document.title = oldTitle; }, 150);
+}
+
+/* =====================================================================
+   DADES (exportar / importar)
+   ===================================================================== */
+function exportData(){
+  const data = { app: 'vistes', version: 1, exported: new Date().toISOString(), profiles: state.profiles, pieces: state.pieces, docs: state.docs };
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([JSON.stringify(data)], { type: 'application/json' }));
+  a.download = `vistes-dades-${new Date().toISOString().slice(0, 10)}.json`;
+  a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+}
+async function importData(file){
+  try {
+    const data = JSON.parse(await file.text());
+    if (data.app !== 'vistes') throw new Error();
+    for (const p of data.profiles || []) await saveProfile(p);
+    for (const p of data.pieces || []){ state.pieces = state.pieces.filter(x => x.id !== p.id); state.pieces.push(p); await DB.put('pieces', p); }
+    for (const d of data.docs || []){ state.docs = state.docs.filter(x => x.id !== d.id); state.docs.push(d); await DB.put('docs', d); }
+    if (!state.settings.activeProfile && state.profiles[0]){ state.settings.activeProfile = state.profiles[0].id; await saveSettings(); }
+    renderAll(); toast(t('importOk'));
+  } catch { toast(t('importErr')); }
+}
+
+/* =====================================================================
+   NAVEGACIÓ I ARRENCADA
+   ===================================================================== */
+function showTab(name){
+  if (name !== 'pieces' && ED.piece && !closeEditor(false)) return;
+  document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('on', b.dataset.tab === name));
+  document.querySelectorAll('.tab').forEach(s => s.classList.toggle('on', s.id === 'tab-' + name));
+  if (name === 'doc' && curDoc){ renderDocForm(); renderPreview(); }
+}
+function renderAll(){
+  applyI18n(); renderProfileSelect(); renderDocs(); renderPieces(); renderProfiles();
+  if (curDoc){ renderDocForm(); renderPreview(); }
+  if (ED.piece){ updateHint(); buildFloor(); renderMiniViews(); renderCutList(); }
+}
+function bindUI(){
+  $('#tabs').onclick = e => { const b = e.target.closest('[data-tab]'); if (b) showTab(b.dataset.tab); };
+  $('#sel-lang').onchange = async e => { uiLang = e.target.value; state.settings.uiLang = uiLang; await saveSettings(); renderAll(); };
+  $('#sel-profile').onchange = async e => { state.settings.activeProfile = e.target.value; await saveSettings(); renderProfiles(); };
+  $('#btn-new-fitxa').onclick = async () => { const d = newDoc('ficha'); await saveDoc(d); renderDocs(); openDoc(d); };
+  $('#btn-new-exam').onclick = async () => { const d = newDoc('examen'); await saveDoc(d); renderDocs(); openDoc(d); };
+  $('#docs-list').onclick = async e => {
+    const b = e.target.closest('button'); if (!b) return;
+    if (b.dataset.open) openDoc(state.docs.find(d => d.id === b.dataset.open));
+    if (b.dataset.dup){ const d = clone(state.docs.find(x => x.id === b.dataset.dup)); d.id = uid(); d.title = (d.title || t('untitledDoc')) + ' ' + t('copyOf'); await saveDoc(d); renderDocs(); }
+    if (b.dataset.del && confirm(t('confirmDel'))){ await DB.del('docs', b.dataset.del); state.docs = state.docs.filter(d => d.id !== b.dataset.del); if (curDoc && curDoc.id === b.dataset.del){ curDoc = null; $('#doc-editor').style.display = 'none'; $('#doc-none').style.display = ''; } renderDocs(); }
+  };
+  $('#btn-new-piece').onclick = () => openEditor(newPiece());
+  $('#lib-search').oninput = renderPieces; $('#lib-filter').onchange = renderPieces;
+  $('#pieces-list').onclick = async e => {
+    const b = e.target.closest('button'); if (!b) return;
+    if (b.dataset.edit) openEditor(pieceById(b.dataset.edit));
+    if (b.dataset.dup){ const p = clone(pieceById(b.dataset.dup)); p.id = uid(); p.name += ' ' + t('copyOf'); await savePiece(p); renderPieces(); }
+    if (b.dataset.del && confirm(t('confirmDel'))){ await DB.del('pieces', b.dataset.del); state.pieces = state.pieces.filter(p => p.id !== b.dataset.del); renderPieces(); }
+  };
+  $('#btn-new-profile').onclick = async () => { await saveProfile(newProfile()); renderProfiles(); renderProfileSelect(); };
+  const plist = $('#profiles-list');
+  plist.addEventListener('input', async e => {
+    const el = e.target, card = el.closest('[data-pid]'); if (!card || !el.dataset.k) return;
+    const p = profileById(card.dataset.pid); p[el.dataset.k] = el.value; await saveProfile(p); renderProfileSelect();
+    if (el.dataset.k === 'centre') card.querySelector('h3').firstChild.textContent = (el.value || t('newProfile')) + ' ';
+  });
+  plist.addEventListener('change', async e => {
+    const el = e.target; if (!el.dataset.logo || !el.files[0]) return;
+    const p = profileById(el.closest('[data-pid]').dataset.pid); p[el.dataset.logo] = await fileToDataURL(el.files[0]); await saveProfile(p); renderProfiles();
+  });
+  plist.addEventListener('click', async e => {
+    const b = e.target.closest('button'); if (!b) return;
+    const p = profileById(b.closest('[data-pid]').dataset.pid);
+    if (b.dataset.use){ state.settings.activeProfile = p.id; await saveSettings(); renderProfiles(); renderProfileSelect(); }
+    if (b.dataset.rmlogo){ p[b.dataset.rmlogo] = ''; await saveProfile(p); renderProfiles(); }
+    if (b.dataset.delp && confirm(t('confirmDel'))){ await DB.del('profiles', p.id); state.profiles = state.profiles.filter(x => x.id !== p.id); if (state.settings.activeProfile === p.id){ state.settings.activeProfile = state.profiles[0] ? state.profiles[0].id : null; await saveSettings(); } renderProfiles(); renderProfileSelect(); }
+  });
+  $('#btn-export-data').onclick = exportData;
+  $('#inp-import').onchange = e => { if (e.target.files[0]) importData(e.target.files[0]); e.target.value = ''; };
+  $('#btn-samples').onclick = async () => { for (const p of samplePieces()) await savePiece(p); renderPieces(); toast(t('samplesOk')); };
+  $('#prev-mode').onchange = renderPreview; $('#prev-lang').onchange = renderPreview;
+  $('#btn-export').onclick = () => { $('#exp-lang').value = $('#prev-lang').value; $('#exp-modelb-wrap').style.display = curDoc.type === 'examen' ? '' : 'none'; $('#dlg-export').showModal(); };
+  $('#exp-cancel').onclick = () => $('#dlg-export').close();
+  $('#exp-go').onclick = () => { $('#dlg-export').close(); exportPDF(); };
+  window.addEventListener('afterprint', () => { $('#print-root').innerHTML = ''; });
+  window.addEventListener('resize', debounce(() => { if (curDoc && $('#tab-doc').classList.contains('on')) renderPreview(); }, 200));
+  window.addEventListener('beforeunload', e => { if (ED.dirty){ e.preventDefault(); e.returnValue = ''; } });
+  bindEditor(); bindDocForm();
+}
+async function welcome(){
+  return new Promise(res => {
+    const dlg = $('#dlg-welcome');
+    $('#wel-lang').value = uiLang;
+    $('#wel-lang').onchange = e => { uiLang = e.target.value; applyI18n(); };
+    dlg.addEventListener('cancel', e => e.preventDefault());
+    $('#wel-go').onclick = async () => {
+      const p = newProfile({ teacher: $('#wel-teacher').value.trim(), centre: $('#wel-centre').value.trim(), admin: $('#wel-admin').value.trim() });
+      await saveProfile(p);
+      state.settings.activeProfile = p.id; state.settings.uiLang = uiLang; await saveSettings();
+      for (const s of samplePieces()) await savePiece(s);
+      dlg.close(); res();
+    };
+    dlg.showModal();
+  });
+}
+async function boot(){
+  await DB.open();
+  const [profiles, pieces, docs, settings] = await Promise.all(STORES.map(s => DB.all(s)));
+  Object.assign(state, { profiles, pieces, docs });
+  if (settings[0]) state.settings = settings[0];
+  const nav = (navigator.language || 'ca').slice(0, 2);
+  uiLang = state.settings.uiLang || (LANGS.includes(nav) ? nav : 'es');
+  $('#sel-lang').value = uiLang;
+  applyI18n();
+  bindUI();
+  try { await initManifold(); }
+  catch (err){ console.error(err); $('#loading').innerHTML = `<div style="max-width:420px;text-align:center">${esc(t('loadErr'))}</div>`; return; }
+  $('#loading').style.display = 'none';
+  if (!state.profiles.length) await welcome();
+  $('#sel-lang').value = uiLang;
+  renderAll();
+}
+boot();
+</script>
+</body>
+</html>
