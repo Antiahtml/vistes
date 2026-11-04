@@ -30,6 +30,7 @@ h3{font-size:15px;margin:0 0 8px}
 #tabs button:hover:not(.on){background:#f1ebe0}
 .hdr-right{margin-left:auto;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 .hdr-right label{display:flex;gap:6px;align-items:center;color:var(--muted);font-size:12px}
+.hdr-right label[hidden],.field[hidden]{display:none}
 
 /* ---------- generic controls ---------- */
 .btn{border:1px solid var(--line);background:var(--panel);padding:7px 12px;border-radius:8px;font-weight:600;display:inline-flex;gap:6px;align-items:center;white-space:nowrap}
@@ -143,6 +144,7 @@ dialog::backdrop{background:rgba(40,30,20,.35)}
 .doc-hdr .top{display:flex;justify-content:space-between;align-items:center;gap:6mm;padding:2.5mm 4mm;border-bottom:.3mm solid #333}
 .doc-hdr .side{display:flex;align-items:center;gap:3mm;max-width:50%}
 .doc-hdr .side img{max-height:14mm;max-width:38mm;object-fit:contain}
+.doc-hdr .side img.adm{max-height:none;max-width:80mm;width:auto}
 .doc-hdr .side .txt{font-size:8.5pt;line-height:1.25;white-space:pre-line}
 .doc-hdr .side.right{text-align:right;flex-direction:row-reverse}
 .doc-hdr .side .cname{font-weight:700;font-size:10pt}
@@ -158,6 +160,7 @@ dialog::backdrop{background:rgba(40,30,20,.35)}
 .doc-hdr .solbadge{background:#111;color:#fff;font-size:9pt;padding:.6mm 3mm;border-radius:1mm;letter-spacing:.5px}
 .fitxa-hdr{display:flex;align-items:center;gap:5mm;border-bottom:.5mm solid #333;padding-bottom:2.5mm}
 .fitxa-hdr img{max-height:13mm;max-width:30mm;object-fit:contain}
+.fitxa-hdr img.adm{max-height:none;max-width:50mm;width:auto}
 .fitxa-hdr .tt{flex:1}
 .fitxa-hdr h1{font-size:15pt;margin:0}
 .fitxa-hdr .sub{font-size:8.5pt;color:#555}
@@ -178,6 +181,10 @@ dialog::backdrop{background:rgba(40,30,20,.35)}
 .legend .sw i{width:7mm;height:5mm;border:.3mm solid #333;border-radius:1mm;display:inline-block}
 .modelrow{display:flex;gap:6mm;align-items:center;justify-content:center;border:.3mm solid #bbb;border-radius:2mm;padding:2mm}
 .lines div{border-bottom:.3mm solid #999;height:8mm}
+.teo{display:flex;gap:5mm;align-items:center}
+.teo table{flex:1;border-collapse:collapse;font-size:9.5pt}
+.teo th,.teo td{border:.3mm solid #555;padding:1.5mm 2mm;height:15mm;text-align:left}
+.teo th{height:auto;background:#eee}
 
 @media print{
   @page{size:A4;margin:0}
@@ -214,6 +221,7 @@ dialog::backdrop{background:rgba(40,30,20,.35)}
   <div class="hdr-right">
     <label><span data-i18n="profile">Centre</span><select id="sel-profile"></select></label>
     <label>🌐<select id="sel-lang"><option value="ca">Català</option><option value="es">Castellano</option><option value="gl">Galego</option></select></label>
+    <label id="community-wrap" hidden><span data-i18n="community">Comunidad</span><select id="sel-community"></select></label>
   </div>
 </header>
 
@@ -252,7 +260,7 @@ dialog::backdrop{background:rgba(40,30,20,.35)}
         <div class="ed-tools">
           <button class="btn on" data-mode="add">➕ <span data-i18n="toolAdd">Afegir cub</span></button>
           <button class="btn" data-mode="remove">➖ <span data-i18n="toolRemove">Treure cub</span></button>
-          <button class="btn" data-mode="cut">✂️ <span data-i18n="toolCut">Tallar (3 punts)</span></button>
+          <button class="btn" data-mode="cut">✂️ <span data-i18n="toolCut">Tallar (3 o 4 punts)</span></button>
         </div>
         <hr class="sep">
         <div class="ed-tools">
@@ -277,7 +285,9 @@ dialog::backdrop{background:rgba(40,30,20,.35)}
           <div class="boxin" id="ed-boxin"></div>
           <div class="ed-tools">
             <button class="btn" id="ed-cut-red" style="border-color:#e05a4a;color:#c0392b">■ <span data-i18n="removeRed">Eliminar la part vermella</span></button>
+            <div class="small muted" id="ed-cut-red-info"></div>
             <button class="btn" id="ed-cut-blue" style="border-color:#3f6fd8;color:#2851b8">■ <span data-i18n="removeBlue">Eliminar la part blava</span></button>
+            <div class="small muted" id="ed-cut-blue-info"></div>
             <button class="btn ghost" id="ed-cut-cancel" data-i18n="cancel">Cancel·lar</button>
           </div>
         </div>
@@ -299,7 +309,6 @@ dialog::backdrop{background:rgba(40,30,20,.35)}
           <h3 style="margin:0" data-i18n="preview">Vista prèvia</h3>
           <div style="display:flex;gap:8px;align-items:center">
             <select id="prev-mode" style="width:auto"><option value="st" data-i18n="cStatement">Enunciat</option><option value="sol" data-i18n="cSolution">Solucionari</option></select>
-            <select id="prev-lang" style="width:auto"><option value="ca">CA</option><option value="es">ES</option><option value="gl">GL</option></select>
             <button class="btn primary" id="btn-export">⬇ <span data-i18n="exportPdf">Generar PDF</span></button>
           </div>
         </div>
@@ -332,8 +341,6 @@ dialog::backdrop{background:rgba(40,30,20,.35)}
 <!-- export dialog -->
 <dialog id="dlg-export"><div class="dlg">
   <h2 data-i18n="exportPdf">Generar PDF</h2>
-  <div class="field"><span data-i18n="docLang">Idioma del document</span>
-    <select id="exp-lang"><option value="ca">Català</option><option value="es">Castellano</option><option value="gl">Galego</option></select></div>
   <div class="field"><span data-i18n="content">Contingut</span>
     <select id="exp-content"><option value="st" data-i18n="cStatement">Enunciat</option><option value="sol" data-i18n="cSolution">Solucionari</option><option value="both" data-i18n="cBoth">Enunciat + solucionari</option></select></div>
   <label class="check" id="exp-modelb-wrap"><input type="checkbox" id="exp-modelb"><span data-i18n="modelB">Afegir model B</span></label>
@@ -348,7 +355,7 @@ dialog::backdrop{background:rgba(40,30,20,.35)}
   <div class="field"><span data-i18n="uiLang">Idioma</span><select id="wel-lang"><option value="ca">Català</option><option value="es">Castellano</option><option value="gl">Galego</option></select></div>
   <div class="field"><span data-i18n="teacher">Professor/a</span><input type="text" id="wel-teacher"></div>
   <div class="field"><span data-i18n="centreName">Nom del centre</span><input type="text" id="wel-centre"></div>
-  <div class="field"><span data-i18n="adminText">Administració</span><input type="text" id="wel-admin"></div>
+  <div class="field" id="wel-community-wrap" hidden><span data-i18n="community">Comunidad</span><select id="wel-community"></select></div>
   <p class="small muted" data-i18n="welcomeLogos"></p>
   <div class="dlg-actions"><button class="btn primary" id="wel-go" data-i18n="start">Començar</button></div>
 </div></dialog>
@@ -392,12 +399,16 @@ const T = {
   search:['Cercar…','Buscar…','Buscar…'], allLevels:['Tots els nivells','Todos los niveles','Todos os niveis'],
   name:['Nom','Nombre','Nome'], level:['Nivell','Nivel','Nivel'], lvl1:['Fàcil','Fácil','Fácil'], lvl2:['Mitjà','Medio','Medio'], lvl3:['Difícil','Difícil','Difícil'],
   base:['Base','Base','Base'], maxH:['Alçada màx.','Altura máx.','Altura máx.'],
-  toolAdd:['Afegir cub','Añadir cubo','Engadir cubo'], toolRemove:['Treure cub','Quitar cubo','Quitar cubo'], toolCut:['Tallar (3 punts)','Cortar (3 puntos)','Cortar (3 puntos)'],
+  toolAdd:['Afegir cub','Añadir cubo','Engadir cubo'], toolRemove:['Treure cub','Quitar cubo','Quitar cubo'], toolCut:['Tallar (3 o 4 punts)','Cortar (3 o 4 puntos)','Cortar (3 ou 4 puntos)'],
   undo:['Desfer','Deshacer','Desfacer'], redo:['Refer','Rehacer','Refacer'], rotate:['Girar 90°','Girar 90°','Xirar 90°'], mirror:['Mirall','Espejo','Espello'],
   resetView:['Centrar vista','Centrar vista','Centrar vista'], clear:['Buidar','Vaciar','Baleirar'],
   cuts:['Talls','Cortes','Cortes'], noCuts:['Cap tall','Ningún corte','Ningún corte'], cutN:['Tall','Corte','Corte'],
   hintAdd:['Clic: afegir un cub (sobre la quadrícula o sobre una cara) · Arrossegar: girar · Roda: zoom','Clic: añadir un cubo (sobre la cuadrícula o sobre una cara) · Arrastrar: girar · Rueda: zoom','Clic: engadir un cubo (sobre a cuadrícula ou sobre unha cara) · Arrastrar: xirar · Roda: zoom'],
   hintRemove:['Clic sobre un cub per treure\'l','Clic sobre un cubo para quitarlo','Clic sobre un cubo para quitalo'],
+  hintCut4:['Opcional: clica un 4t punt verd (del mateix pla) per ampliar el tall','Opcional: haz clic en un 4.º punto verde (del mismo plano) para ampliar el corte','Opcional: fai clic nun 4.º punto verde (do mesmo plano) para ampliar o corte'],
+  errNotCoplanar:["Aquest punt no és al mateix pla: només es poden fer servir els punts verds.",'Este punto no está en el mismo plano: solo se pueden usar los puntos verdes.','Este punto non está no mesmo plano: só se poden usar os puntos verdes.'],
+  faceIn:['La cara es veurà a:','La cara se verá en:','A cara verase en:'],
+  faceNone:['La cara no es veurà en cap vista','La cara no se verá en ninguna vista','A cara non se verá en ningunha vista'],
   hintCut:['Fes clic a 3 vèrtexs (punts) per definir el pla de tall','Haz clic en 3 vértices (puntos) para definir el plano de corte','Fai clic en 3 vértices (puntos) para definir o plano de corte'],
   cutZone:['Zona del tall','Zona del corte','Zona do corte'],
   cutZoneHelp:["Només es retalla el que queda dins d'aquesta caixa.",'Solo se recorta lo que queda dentro de esta caja.','Só se recorta o que queda dentro desta caixa.'],
@@ -414,24 +425,33 @@ const T = {
   dateHint:['Si la deixes buida, sortirà una línia per escriure-la.','Si la dejas vacía, saldrá una línea para escribirla.','Se a deixas baleira, sairá unha liña para escribila.'],
   instructions:['Instruccions','Instrucciones','Instrucións'], gridSize:['Mida de la quadrícula','Tamaño de la cuadrícula','Tamaño da cuadrícula'],
   hiddenLines:['Línies ocultes (discontínues) al solucionari','Líneas ocultas (discontinuas) en el solucionario','Liñas ocultas (descontinuas) no solucionario'],
-  viewLabels:['Indicar on va cada vista a la quadrícula','Indicar dónde va cada vista en la cuadrícula','Indicar onde vai cada vista na cuadrícula'],
+  nameA:['Nom «Alçat»','Nombre «Alzado»','Nome «Alzado»'], nameP:['Nom «Planta»','Nombre «Planta»','Nome «Planta»'], nameF:['Nom «Perfil»','Nombre «Perfil»','Nome «Perfil»'],
+  optGap:['Espai entre quadrícules (mm)','Espacio entre cuadrículas (mm)','Espazo entre cuadrículas (mm)'],
+  pieceOptional:['Peça (si no en tries cap, en surt una per defecte)','Pieza (si no eliges ninguna, sale una por defecto)','Peza (se non escolles ningunha, sae unha por defecto)'],
+  optArrows:['Fletxes PLANTA / ALÇAT / PERFIL a la figura','Flechas PLANTA / ALZADO / PERFIL en la figura','Frechas PLANTA / ALZADO / PERFIL na figura'],
+  optFreeColors:["L'alumnat tria els colors (llegenda en blanc)",'El alumnado elige los colores (leyenda en blanco)','O alumnado escolle as cores (lenda en branco)'],
+  logoSize:['Mida del logo','Tamaño del logo','Tamaño do logo'],
+  showAdmin:['Mostrar el logo de la comunitat','Mostrar el logo de la comunidad','Amosar o logo da comunidade'],
+  optGuides:['Guies discontínues a la figura','Guías discontinuas en la figura','Guías descontinuas na figura'],
   exercises:['Exercicis','Ejercicios','Exercicios'], addEx:['Afegir exercici','Añadir ejercicio','Engadir exercicio'],
   kVistas:['Dibuixar les vistes','Dibujar las vistas','Debuxar as vistas'], kColor:['Acolorir segons la vista','Colorear según la vista','Colorear segundo a vista'],
-  kTercera:['Vista que falta','Vista que falta','Vista que falta'], kText:['Pregunta oberta','Pregunta abierta','Pregunta aberta'],
+  kTercera:['Vista que falta','Vista que falta','Vista que falta'], kTeoria:["Des d'on es mira cada vista",'Desde dónde se mira cada vista','Desde onde se mira cada vista'], kText:['Pregunta oberta','Pregunta abierta','Pregunta aberta'],
   points:['Punts','Puntos','Puntos'], statement:['Enunciat','Enunciado','Enunciado'],
-  statementPh:["Buit = enunciat per defecte en l'idioma del PDF",'Vacío = enunciado por defecto en el idioma del PDF','Baleiro = enunciado por defecto no idioma do PDF'],
+  statementPh:['Buit = enunciat per defecte','Vacío = enunciado por defecto','Baleiro = enunciado por defecto'],
   choosePieces:["Peces de l'exercici (clic per triar, en ordre)",'Piezas del ejercicio (clic para elegir, en orden)','Pezas do exercicio (clic para escoller, en orde)'],
   modelPiece:['Peça model (surt acolorida)','Pieza modelo (sale coloreada)','Peza modelo (sae coloreada)'], none:['Cap','Ninguna','Ningunha'],
   missingView:['Vista que falta','Vista que falta','Vista que falta'], showIso:['Mostrar també la perspectiva','Mostrar también la perspectiva','Amosar tamén a perspectiva'],
   lines:['Línies per respondre','Líneas para responder','Liñas para responder'], perRow:['Peces per fila','Piezas por fila','Pezas por fila'],
   exportPdf:['Generar PDF','Generar PDF','Xerar PDF'], preview:['Vista prèvia','Vista previa','Vista previa'],
-  docLang:['Idioma del document','Idioma del documento','Idioma do documento'], content:['Contingut','Contenido','Contido'],
+  content:['Contingut','Contenido','Contido'],
   cStatement:['Enunciat','Enunciado','Enunciado'], cSolution:['Solucionari','Solucionario','Solucionario'], cBoth:['Enunciat + solucionari','Enunciado + solucionario','Enunciado + solucionario'],
   modelB:['Afegir model B (mateixes peces girades 90°)','Añadir modelo B (mismas piezas giradas 90°)','Engadir modelo B (mesmas pezas xiradas 90°)'],
   printHint:["S'obrirà el diàleg d'impressió: tria «Desa com a PDF» com a destinació.",'Se abrirá el diálogo de impresión: elige «Guardar como PDF» como destino.','Abrirase o diálogo de impresión: escolle «Gardar como PDF» como destino.'],
   noPiecesYet:['Primer crea alguna peça a la pestanya Peces.','Primero crea alguna pieza en la pestaña Piezas.','Primeiro crea algunha peza na lapela Pezas.'],
   teacher:['Professor/a','Profesor/a','Profesor/a'], centreName:['Nom del centre','Nombre del centro','Nome do centro'],
-  adminText:['Administració (text al costat del logo)','Administración (texto junto al logo)','Administración (texto xunto ao logo)'],
+  adminText:['Text del logo propi','Texto del logo propio','Texto do logo propio'],
+  community:['Comunitat','Comunidad','Comunidade'],
+  logoAdminHint:["Només si vols substituir el logo automàtic, que surt segons l'idioma triat a dalt.",'Solo si quieres sustituir el logo automático, que sale según el idioma elegido arriba.','Só se queres substituír o logo automático, que sae segundo o idioma escollido arriba.'],
   logoAdmin:["Logo de l'administració",'Logo de la administración','Logo da administración'], logoCentre:['Logo del centre','Logo del centro','Logo do centro'],
   upload:['Clic per pujar una imatge','Clic para subir una imagen','Clic para subir unha imaxe'], removeImg:['Treure','Quitar','Quitar'],
   newProfile:['Nou centre','Nuevo centro','Novo centro'], active:['En ús','En uso','En uso'], useThis:['Fer servir aquest','Usar este','Usar este'],
@@ -453,6 +473,12 @@ const T = {
   aA:['ALÇAT','ALZADO','ALZADO'], aP:['PLANTA','PLANTA','PLANTA'], aF:['PERFIL','PERFIL','PERFIL'],
   stVistas:["Dibuixa l'alçat, la planta i el perfil esquerre de les peces següents (sistema europeu).",'Dibuja el alzado, la planta y el perfil izquierdo de las siguientes piezas (sistema europeo).','Debuxa o alzado, a planta e o perfil esquerdo das seguintes pezas (sistema europeo).'],
   stColor:["Prenent com a model la peça acolorida, acoloreix les cares de les peces segons la vista o vistes en què es veu cada cara. Fes servir a totes el mateix codi de colors.",'Tomando como modelo la pieza coloreada, colorea las caras de las piezas según la vista o vistas en las que se ve cada cara. Utiliza en todas el mismo código de colores.','Tomando como modelo a peza coloreada, colorea as caras das pezas segundo a vista ou vistas nas que se ve cada cara. Utiliza en todas o mesmo código de cores.'],
+  stColorFree:["Tria un color per a cada combinació de vistes i pinta'l a la llegenda. Després acoloreix les cares de les peces segons la vista o vistes en què es veu cada cara. Fes servir a totes el mateix codi de colors.",'Elige un color para cada combinación de vistas y píntalo en la leyenda. Después colorea las caras de las piezas según la vista o vistas en las que se ve cada cara. Utiliza en todas el mismo código de colores.','Escolle unha cor para cada combinación de vistas e píntaa na lenda. Despois colorea as caras das pezas segundo a vista ou vistas nas que se ve cada cara. Utiliza en todas o mesmo código de cores.'],
+  stTeoria:["Observa la peça i completa la taula: indica des d'on es mira cada vista (quina fletxa és) i on es dibuixa en el sistema europeu.",'Observa la pieza y completa la tabla: indica desde dónde se mira cada vista (qué flecha es) y dónde se dibuja en el sistema europeo.','Observa a peza e completa a táboa: indica desde onde se mira cada vista (que frecha é) e onde se debuxa no sistema europeo.'],
+  thView:['Vista','Vista','Vista'], thFrom:["Des d'on es mira",'Desde dónde se mira','Desde onde se mira'], thWhere:['On es dibuixa','Dónde se dibuja','Onde se debuxa'],
+  ansAfrom:['Fletxa C: des de davant','Flecha C: desde delante','Frecha C: desde diante'], ansAwhere:["A dalt a l'esquerra: és la vista principal",'Arriba a la izquierda: es la vista principal','Arriba á esquerda: é a vista principal'],
+  ansPfrom:['Fletxa B: des de dalt','Flecha B: desde arriba','Frecha B: desde arriba'], ansPwhere:["A sota de l'alçat",'Debajo del alzado','Debaixo do alzado'],
+  ansFfrom:["Fletxa A: des de l'esquerra",'Flecha A: desde la izquierda','Frecha A: desde a esquerda'], ansFwhere:["A la dreta de l'alçat",'A la derecha del alzado','Á dereita do alzado'],
   stTercera:['Dibuixa la vista que falta de cada peça (sistema europeu).','Dibuja la vista que falta de cada pieza (sistema europeo).','Debuxa a vista que falta de cada peza (sistema europeo).'],
 };
 let uiLang = 'ca';
@@ -530,22 +556,37 @@ function planeOf(pts){
   return { n, d: dot(n, pts[0]) };
 }
 function sideOf(pts, p){ const { n, d } = planeOf(pts); return Math.sign(dot(n, p) - d) || 1; }
-function cutRegion(cut){
-  const [a, b] = cut.box;
-  const box = MF.Manifold.cube([b[0]-a[0], b[1]-a[1], b[2]-a[2]], false).translate(a);
-  const { n } = planeOf(cut.pts);
-  const nn = norm(n).map(v => v * cut.side);
-  const r = box.trimByPlane(nn, dot(nn, cut.pts[0]));
-  box.delete();
-  return r;
+// Plans que retallen un cub: només els dels talls amb el cub dins de la seva caixa.
+// Cada pla es dona orientat cap a la part que es conserva.
+function cellPlanes(cell, cuts){
+  return cuts.filter(c => [0, 1, 2].every(k => cell[k] >= c.box[0][k] && cell[k] + 1 <= c.box[1][k])).map(c => {
+    const nn = norm(planeOf(c.pts).n).map(v => -v * c.side);
+    return { n: nn, d: dot(nn, c.pts[0]) };
+  });
 }
+function trimCell(m, planes){
+  for (const { n, d } of planes){ const t = m.trimByPlane(n, d); m.delete(); m = t; }
+  return m;
+}
+// Cada cub es retalla per separat i després s'uneixen. Si es restessin caixes del sòlid, les cares
+// coincidents deixarien làmines de gruix zero. Els cubs es fan INFLATE més grans perquè se solapin i
+// la unió no tingui cares coincidents; meshOf arrodoneix a 1e-4 i els torna a la seva mida exacta.
+const INFLATE = 1e-5;
 function buildManifold(cubes, cuts){
-  if (!cubes.length) return null;
-  const parts = cubes.map(c => MF.Manifold.cube([1, 1, 1], false).translate(c));
-  let s = MF.Manifold.union(parts);
+  const parts = [];
+  for (const c of cubes){
+    const planes = cellPlanes(c, cuts);
+    const exact = trimCell(MF.Manifold.cube([1, 1, 1], false).translate(c), planes);
+    const keep = !exact.isEmpty() && exact.volume() > 1e-9;
+    exact.delete();
+    if (!keep) continue;
+    const s = 1 + 2 * INFLATE;
+    parts.push(trimCell(MF.Manifold.cube([s, s, s], false).translate(c.map(v => v - INFLATE)), planes));
+  }
+  if (!parts.length) return null;
+  const u = MF.Manifold.union(parts);
   parts.forEach(p => p.delete());
-  for (const c of cuts){ const r = cutRegion(c); const s2 = s.subtract(r); s.delete(); r.delete(); s = s2; }
-  return s;
+  return u;
 }
 function meshOf(m){
   const mesh = m.getMesh(), np = mesh.numProp, vp = mesh.vertProperties, tv = mesh.triVerts;
@@ -562,11 +603,7 @@ function meshOf(m){
     if (a === b || b === c || a === c) continue;
     tris.push([a, b, c]);
   }
-  // Quan un tall coincideix amb una cara, Manifold pot deixar una làmina de gruix zero:
-  // parells de triangles amb els mateixos vèrtexs i orientació oposada. Els eliminem.
-  const count = new Map(), keyOf = tr => [...tr].sort((x, y) => x - y).join('_');
-  tris.forEach(tr => { const k = keyOf(tr); count.set(k, (count.get(k) || 0) + 1); });
-  return { verts, tris: tris.filter(tr => count.get(keyOf(tr)) === 1) };
+  return { verts, tris };
 }
 const geoCache = new Map();
 function getGeo(piece){
@@ -574,24 +611,48 @@ function getGeo(piece){
   const key = JSON.stringify([piece.cubes, piece.cuts]);
   if (geoCache.has(key)) return geoCache.get(key);
   const m = buildManifold(piece.cubes, piece.cuts);
-  const empty = m.isEmpty();
-  const raw = empty ? null : meshOf(m);
-  m.delete();
-  const geo = raw && analyse(raw);
+  const raw = m && !m.isEmpty() ? meshOf(m) : null;
+  if (m) m.delete();
+  const geo = raw && analyse(raw, piece.cuts);
   if (geoCache.size > 300) geoCache.clear();
   geoCache.set(key, geo);
   return geo;
 }
 // Agrupa triangles per pla, troba les arestes reals (entre plans diferents) i la caixa contenidora.
-function analyse({ verts, tris }){
+function analyse({ verts, tris }, cuts){
+  // Totes les cares són sobre un pla de la quadrícula o sobre un pla de tall: cada triangle s'assigna
+  // al seu pla exacte, perquè els vèrtexs arrodonits no separin cares que són una de sola.
+  const dirs = [[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,0,1],[0,0,-1]].map(n => ({ n }));
+  cuts.forEach(c => { const n = norm(planeOf(c.pts).n), d = dot(n, c.pts[0]); dirs.push({ n, d }, { n: n.map(v => -v || 0), d: -d }); });
   const T3 = tris.map(([a, b, c]) => {
-    const pa = verts[a], pb = verts[b], pc = verts[c];
-    const n = norm(cross(sub(pb, pa), sub(pc, pa)));
-    const d = dot(n, pa);
-    return { v: [a, b, c], p: [pa, pb, pc], n, d, key: n.map(x => f2(x)).join(',') + '|' + f2(d), e1: sub(pb, pa), e2: sub(pc, pa) };
+    const pa = verts[a], pb = verts[b], pc = verts[c], e1 = sub(pb, pa), e2 = sub(pc, pa);
+    const n = norm(cross(e1, e2)), cen = [0, 1, 2].map(k => (pa[k] + pb[k] + pc[k]) / 3);
+    let best = null;
+    for (const p of dirs){
+      if (dot(p.n, n) < 0.99) continue;
+      const d = p.d ?? Math.round(dot(p.n, cen)), gap = Math.abs(dot(p.n, cen) - d);
+      if (gap < 0.01 && (!best || gap < best.gap)) best = { n: p.n, d, gap };
+    }
+    const tr = { v: [a, b, c], p: [pa, pb, pc], n, d: dot(n, pa), key: null, e1, e2 };
+    if (best){ tr.n = best.n; tr.d = best.d; tr.key = best.n.map(f2).join(',') + '|' + f2(best.d); }
+    return tr;
   });
   const emap = new Map();
   T3.forEach((tr, ti) => { for (let k = 0; k < 3; k++){ const i = tr.v[k], j = tr.v[(k+1)%3]; const key = i < j ? i+'_'+j : j+'_'+i; if (!emap.has(key)) emap.set(key, []); emap.get(key).push(ti); } });
+  // L'arrodoniment pot deixar triangles minúsculs amb una normal sense sentit: agafen la cara del
+  // veí per la seva aresta més llarga, perquè no dibuixin línies que no existeixen.
+  const areaOf = tr => Math.hypot(...cross(tr.e1, tr.e2)) / 2;
+  const side = (tr, k) => Math.hypot(...sub(tr.p[k], tr.p[(k+1)%3]));
+  T3.forEach(tr => { if (areaOf(tr) < 2e-4 * Math.max(side(tr, 0), side(tr, 1), side(tr, 2))) tr.key = null; });
+  for (let pass = 0; pass < 4; pass++) T3.forEach((tr, ti) => {
+    if (tr.key) return;
+    for (const k of [0, 1, 2].sort((p, q) => side(tr, q) - side(tr, p))){
+      const i = tr.v[k], j = tr.v[(k+1)%3];
+      const nb = emap.get(i < j ? i+'_'+j : j+'_'+i).find(o => o !== ti && T3[o].key);
+      if (nb === undefined) continue;
+      tr.key = T3[nb].key; tr.n = T3[nb].n; tr.d = T3[nb].d; break;
+    }
+  });
   const edges = [];
   for (const [key, ts] of emap){
     if (ts.length === 2 && T3[ts[0]].key === T3[ts[1]].key) continue;
@@ -674,7 +735,8 @@ function faceClass(n){
 }
 const CLASS_ORDER = ['A','P','F','AP','FP','AF','AFP'];
 function shadeColor(n){
-  const top = Math.max(0, n[2]), front = Math.max(0, -n[1]), left = Math.max(0, -n[0]);
+  // les cares del darrere i de sota només es veuen en girar la peça a l'editor
+  const top = Math.max(0, n[2]), front = Math.abs(n[1]), left = Math.abs(n[0]) + Math.max(0, -n[2]);
   const s = top + front + left || 1;
   const mix = (c1, c2, c3) => Math.round((c1*top + c2*front + c3*left) / s);
   return `rgb(${mix(255,232,201)},${mix(253,214,170)},${mix(246,182,138)})`;
@@ -687,7 +749,7 @@ function faceFill(n, mode){
 
 /* ---------- ordenació de cares (BSP) per pintar en vectorial ---------- */
 function splitPoly(poly, n, d, F, B, C){
-  const ds = poly.pts.map(p => dot(n, p) - d), E = 1e-7;
+  const ds = poly.pts.map(p => dot(n, p) - d), E = 5e-4;
   let pos = false, neg = false;
   ds.forEach(x => { if (x > E) pos = true; if (x < -E) neg = true; });
   if (!pos && !neg) return C.push(poly);
@@ -725,19 +787,29 @@ function svgWrap(minx, miny, w, h, scale, body, fluid){
   const size = fluid ? 'width="100%" height="100%"' : `width="${f2(w*scale)}mm" height="${f2(h*scale)}mm"`;
   return { svg: `<svg xmlns="http://www.w3.org/2000/svg" ${size} viewBox="${f2(minx)} ${f2(miny)} ${f2(w)} ${f2(h)}" preserveAspectRatio="xMidYMid meet">${body}</svg>`, wmm: w*scale, hmm: h*scale };
 }
-// Perspectiva isomètrica. o: {fill:'white'|'shade'|'color', arrows, lang, maxW, maxH (mm), maxScale (mm/unitat), fluid}
+// Guies discontínues: la quadrícula de cubs sobre les tres cares visibles de la caixa de la peça.
+function isoGuides(geo){
+  const { min: a, max: b } = geo.bbox, f = VIEWS.iso.f, L = [];
+  const range = k => { const r = []; for (let v = a[k]; v <= b[k] + 1e-6; v++) r.push(v); return r; };
+  for (const x of range(0)){ L.push([[x, a[1], a[2]], [x, a[1], b[2]]], [[x, a[1], b[2]], [x, b[1], b[2]]]); }
+  for (const y of range(1)){ L.push([[a[0], y, a[2]], [a[0], y, b[2]]], [[a[0], y, b[2]], [b[0], y, b[2]]]); }
+  for (const z of range(2)){ L.push([[a[0], a[1], z], [b[0], a[1], z]], [[a[0], a[1], z], [a[0], b[1], z]]); }
+  return L.map(([p, q]) => [f(p), f(q)]);
+}
+// Perspectiva isomètrica. o: {fill:'white'|'shade'|'color', arrows, letters (A, B, C en lloc dels noms), guides, lang, maxW, maxH (mm), maxScale (mm/unitat), fluid}
 function isoSVG(geo, o = {}){
   const V = VIEWS.iso, lang = o.lang || uiLang, fill = o.fill || 'white';
   const P = geo.verts.map(V.f);
-  const pts = [...P];
+  const guides = o.guides ? isoGuides(geo) : [];
+  const fs = o.fluid ? 0.42 : 3 / (o.maxScale || 9); // text de 3 mm a la mida normal de la figura
+  const pts = [...P, ...guides.flat()];
   const arrows = [];
   if (o.arrows){
     const b = geo.bbox, xc = (b.min[0] + b.max[0]) / 2, yc = (b.min[1] + b.max[1]) / 2, z0 = b.min[2] + 0.3;
-    let top = Infinity, sx = 0; P.forEach(p => { if (p[1] < top) top = p[1]; }); sx = (V.f([xc, yc, 0]))[0];
-    arrows.push({ head: [sx - 0.5, top - 0.3], tail: [sx - 0.5, top - 1.5], label: t('aP', lang), lp: [sx - 0.5, top - 1.75], rot: 0, anchor: 'middle' });
-    arrows.push({ head: V.f([xc, b.min[1] - 0.35, z0]), tail: V.f([xc, b.min[1] - 1.6, z0]), label: t('aA', lang), lp: V.f([xc, b.min[1] - 1.85, z0]), rot: 30, anchor: 'start' });
-    arrows.push({ head: V.f([b.min[0] - 0.35, yc, z0]), tail: V.f([b.min[0] - 1.6, yc, z0]), label: t('aF', lang), lp: V.f([b.min[0] - 1.85, yc, z0]), rot: -30, anchor: 'end' });
-    const fs = 0.42;
+    let top = Infinity, sx = 0; pts.forEach(p => { if (p[1] < top) top = p[1]; }); sx = (V.f([xc, yc, 0]))[0];
+    arrows.push({ head: [sx - 0.5, top - 0.3], tail: [sx - 0.5, top - 1.5], label: o.letters ? 'B' : t('aP', lang), lp: [sx - 0.5, top - 1.75], rot: 0, anchor: 'middle' });
+    arrows.push({ head: V.f([xc, b.min[1] - 0.35, z0]), tail: V.f([xc, b.min[1] - 1.6, z0]), label: o.letters ? 'C' : t('aA', lang), lp: V.f([xc, b.min[1] - 1.85, z0]), rot: o.letters ? 0 : 30, anchor: 'start' });
+    arrows.push({ head: V.f([b.min[0] - 0.35, yc, z0]), tail: V.f([b.min[0] - 1.6, yc, z0]), label: o.letters ? 'A' : t('aF', lang), lp: V.f([b.min[0] - 1.85, yc, z0]), rot: o.letters ? 0 : -30, anchor: 'end' });
     arrows.forEach(a => {
       pts.push(a.head, a.tail, a.lp);
       const len = a.label.length * fs * 0.68, r = a.rot * Math.PI / 180, dir = a.anchor === 'end' ? -1 : 1;
@@ -758,10 +830,11 @@ function isoSVG(geo, o = {}){
     const c = faceFill(poly.n, fill);
     body += `<polygon points="${poly.pts.map(p => V.f(p).map(f2).join(',')).join(' ')}" fill="${c}" stroke="${c}" stroke-width="${f2(sw*0.5)}" stroke-linejoin="round"/>`;
   }
+  if (guides.length) body += `<g stroke="#858585" stroke-width="${f2(sw*0.5)}" stroke-dasharray="${f2(1.3/scale)} ${f2(1/scale)}">` + guides.map(([A, B]) => `<line x1="${f2(A[0])}" y1="${f2(A[1])}" x2="${f2(B[0])}" y2="${f2(B[1])}"/>`).join('') + '</g>';
   const segs = visibleSegments(geo, 'iso').filter(s => s.vis);
   body += `<g stroke="${fill === 'color' ? '#5a1010' : '#1a1a1a'}" stroke-width="${f2(sw)}" stroke-linecap="round">` + segs.map(s => `<line x1="${f2(s.A[0])}" y1="${f2(s.A[1])}" x2="${f2(s.B[0])}" y2="${f2(s.B[1])}"/>`).join('') + '</g>';
   if (o.arrows){
-    const fs = 0.42, ah = 2.0 / scale;
+    const ah = 2.0 / scale;
     body += `<g fill="#111" stroke="#111" stroke-width="${f2(sw*0.7)}" font-family="Helvetica,Arial,sans-serif" font-size="${fs}">`;
     arrows.forEach(a => {
       const dx = a.head[0] - a.tail[0], dy = a.head[1] - a.tail[1], L = Math.hypot(dx, dy), ux = dx / L, uy = dy / L;
@@ -790,32 +863,35 @@ function linesSVG(segs, ox, oy, sw, hidden){
   return (h ? `<g stroke="#222" stroke-width="${f2(sw*0.6)}" stroke-dasharray="${f2(sw*3)} ${f2(sw*2)}" stroke-linecap="butt">${h}</g>` : '') +
          `<g stroke="#111" stroke-width="${f2(sw)}" stroke-linecap="round">${v}</g>`;
 }
-// Quadrícula amb la disposició europea: alçat a dalt a l'esquerra, planta a sota, perfil esquerre a la dreta.
-// o: {cell (mm), show:{alzado,planta,perfil}, labels, lang, hidden, missing}
+// Una quadrícula discontínua per vista, de la mida exacta de la peça, en disposició europea:
+// alçat a dalt a l'esquerra, perfil esquerre a la dreta i planta a sota.
+// o: {cell (mm), gapMM, show:{alzado,planta,perfil}, names:{alzado,planta,perfil}, lang, hidden, missing}
 function gridSVG(geo, o){
-  const { nx, ny, nz } = dims(geo), W = nx + ny + 3, H = nz + ny + 3, c = o.cell, lang = o.lang;
-  const pos = { alzado: [1, 1, nx, nz], planta: [1, nz + 2, nx, ny], perfil: [nx + 2, 1, ny, nz] };
-  let body = `<rect x="0" y="0" width="${W}" height="${H}" fill="#fff"/><g stroke="#b9c3cf" stroke-width="${f2(0.16/c)}">`;
-  for (let i = 0; i <= W; i++) body += `<line x1="${i}" y1="0" x2="${i}" y2="${H}"/>`;
-  for (let j = 0; j <= H; j++) body += `<line x1="0" y1="${j}" x2="${W}" y2="${j}"/>`;
-  body += '</g>';
+  const { nx, ny, nz } = dims(geo), c = o.cell, lang = o.lang, gap = o.gapMM / c;
+  const fs = Math.min(0.42, 2.3 / c), nameH = fs + 2 / c; // alçada del nom sota una quadrícula
+  const low = nz + gap + (o.names.alzado ? nameH : 0);   // el nom de l'alçat separa la planta, no la solapa
+  const pos = { alzado: [0, 0, nx, nz], planta: [0, low, nx, ny], perfil: [nx + gap, 0, ny, nz] };
+  const W = nx + gap + ny, H = Math.max(low + ny + (o.names.planta ? nameH : 0), nz + (o.names.perfil ? nameH : 0));
+  let body = '';
   const sw = 0.55 / c;
   for (const v of ['alzado', 'planta', 'perfil']){
-    const [x, y] = pos[v];
+    const [x, y, w, h] = pos[v];
+    let l = '';
+    for (let i = 0; i <= w; i++) l += `<line x1="${f2(x + i)}" y1="${f2(y)}" x2="${f2(x + i)}" y2="${f2(y + h)}"/>`;
+    for (let j = 0; j <= h; j++) l += `<line x1="${f2(x)}" y1="${f2(y + j)}" x2="${f2(x + w)}" y2="${f2(y + j)}"/>`;
+    body += `<g stroke="#8d97a3" stroke-width="${f2(0.2 / c)}" stroke-dasharray="${f2(1.1 / c)} ${f2(0.8 / c)}">${l}</g>`;
     if (o.show[v]) body += linesSVG(localView(geo, v), x, y, sw, o.hidden);
   }
-  if (o.labels){
-    const fs = Math.min(0.42, 2.3 / c);
-    const L = { alzado: t('vA', lang), planta: t('vP', lang), perfil: t('vFs', lang) };
-    body += `<g font-family="Helvetica,Arial,sans-serif" font-size="${f2(fs)}" fill="#7d8896">`;
-    for (const v of ['alzado', 'planta', 'perfil']){
-      const [x, y, w, h] = pos[v];
-      const miss = o.missing === v;
-      body += `<text x="${f2(x + w/2)}" y="${f2(y + h + 0.62)}" text-anchor="middle" ${miss ? 'font-weight="700" fill="#c0392b"' : ''}>${esc(L[v])}${miss ? ' ?' : ''}</text>`;
-    }
-    body += '</g>';
+  const L = { alzado: t('vA', lang), planta: t('vP', lang), perfil: t('vFs', lang) };
+  let names = '';
+  for (const v of ['alzado', 'planta', 'perfil']){
+    if (!o.names[v]) continue;
+    const [x, y, w, h] = pos[v], miss = o.missing === v;
+    names += `<text x="${f2(x + w/2)}" y="${f2(y + h + fs + 0.8 / c)}" text-anchor="middle" ${miss ? 'font-weight="700" fill="#c0392b"' : ''}>${esc(L[v])}${miss ? ' ?' : ''}</text>`;
   }
-  return svgWrap(0, 0, W, H, c, body, o.fluid);
+  if (names) body += `<g font-family="Helvetica,Arial,sans-serif" font-size="${f2(fs)}" fill="#6b7480">${names}</g>`;
+  const pad = sw;
+  return svgWrap(-pad, -pad, W + 2*pad, H + 2*pad, c, body, o.fluid);
 }
 function singleViewSVG(geo, view){
   const segs = localView(geo, view);
@@ -1020,13 +1096,27 @@ function buildCutPoints(){
   const sg = new THREE.SphereGeometry(0.075, 12, 8);
   for (const p of set.values()){
     const sel = ED.cutPts.some(q => q.join(',') === p.join(','));
-    const m = new THREE.Mesh(sg, new THREE.MeshBasicMaterial({ color: sel ? 0xff7a00 : 0x2b3a55, depthTest: true }));
-    if (sel) m.scale.setScalar(1.7);
+    const next = !sel && ED.cutPts.length === 3 && onCutPlane(p); // punts vàlids per al 4t
+    const m = new THREE.Mesh(sg, new THREE.MeshBasicMaterial({ color: sel ? 0xff7a00 : next ? 0x1fa64a : 0x2b3a55, depthTest: true }));
+    if (sel) m.scale.setScalar(1.7); else if (next) m.scale.setScalar(1.4);
     m.position.set(...p); m.userData.p = p; pointsGroup.add(m);
   }
 }
+function onCutPlane(p){ const { n, d } = planeOf(ED.cutPts); return Math.abs(dot(n, p) - d) < 1e-9; }
+function cutBoxOf(pts){
+  const mn = [0, 1, 2].map(k => Math.min(...pts.map(q => q[k]))), mx = [0, 1, 2].map(k => Math.max(...pts.map(q => q[k])));
+  for (let k = 0; k < 3; k++) if (mn[k] === mx[k]){ mn[k] = 0; mx[k] = k === 2 ? ED.piece.H : ED.piece.N; }
+  return [mn, mx];
+}
+// El 4t punt no canvia el pla (3 punts ja el defineixen): amplia la zona del tall.
+function pickFourthPoint(p, i){
+  if (i === 3){ ED.cutPts.pop(); ED.cutBox = cutBoxOf(ED.cutPts); }
+  else if (i >= 0 || ED.cutPts.length === 4) return;
+  else if (!onCutPlane(p)) return toast(t('errNotCoplanar'));
+  else { ED.cutPts.push(p); ED.cutBox = [ED.cutBox[0].map((v, k) => Math.min(v, p[k])), ED.cutBox[1].map((v, k) => Math.max(v, p[k]))]; }
+  openCutPanel();
+}
 function pickCutPoint(e){
-  if (ED.cutPts.length >= 3) return;
   // el punt més proper al clic en pantalla (tolerància de 16 px); en cas d'empat, el més proper a la càmera
   const r = renderer.domElement.getBoundingClientRect();
   let best = null;
@@ -1039,15 +1129,14 @@ function pickCutPoint(e){
   if (!best) return;
   const p = best.p, k = p.join(',');
   const i = ED.cutPts.findIndex(q => q.join(',') === k);
+  if (ED.cutBox){ pickFourthPoint(p, i); buildCutPoints(); updateHint(); return; }
   if (i >= 0) ED.cutPts.splice(i, 1); else ED.cutPts.push(p);
   if (ED.cutPts.length === 3){
     const { n } = planeOf(ED.cutPts);
     if (Math.hypot(...n) < 1e-9){ toast(t('errCollinear')); ED.cutPts = []; }
     else if ([0, 1, 2].filter(k2 => Math.abs(n[k2]) < 1e-9).length >= 2){ toast(t('errFlat')); ED.cutPts = []; }
     else {
-      const mn = [0, 1, 2].map(k2 => Math.min(...ED.cutPts.map(q => q[k2]))), mx = [0, 1, 2].map(k2 => Math.max(...ED.cutPts.map(q => q[k2])));
-      for (let k2 = 0; k2 < 3; k2++) if (mn[k2] === mx[k2]){ mn[k2] = 0; mx[k2] = k2 === 2 ? ED.piece.H : ED.piece.N; }
-      ED.cutBox = [mn, mx];
+      ED.cutBox = cutBoxOf(ED.cutPts);
       openCutPanel();
     }
   }
@@ -1063,20 +1152,18 @@ function openCutPanel(){
 }
 function closeCutPanel(){ $('#ed-cutpanel').classList.remove('on'); ED.cutPts = []; ED.cutBox = null; disposeGroup(cutGroup); buildCutPoints(); updateHint(); }
 function regionMesh(side, color){
-  const cut = { pts: ED.cutPts, box: ED.cutBox, side };
-  const solid = buildManifold(ED.piece.cubes, ED.piece.cuts);
-  const reg = cutRegion(cut);
-  const inter = solid.intersect(reg);
-  solid.delete(); reg.delete();
-  const empty = inter.isEmpty();
+  // la part que s'eliminaria: el que queda de la caixa conservant només aquest costat
+  const [a, b] = ED.cutBox;
+  const inBox = ED.piece.cubes.filter(c => [0, 1, 2].every(k => c[k] >= a[k] && c[k] + 1 <= b[k]));
+  const reg = buildManifold(inBox, [...ED.piece.cuts, { pts: ED.cutPts, box: ED.cutBox, side: -side }]);
   let mesh = null;
-  if (!empty){
-    const { verts, tris } = meshOf(inter);
+  if (reg && !reg.isEmpty()){
+    const { verts, tris } = meshOf(reg);
     const pos = []; tris.forEach(tr => tr.forEach(i => pos.push(...verts[i])));
     const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
     mesh = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.55, depthWrite: false, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }));
   }
-  inter.delete();
+  if (reg) reg.delete();
   return mesh;
 }
 function previewCut(){
@@ -1108,6 +1195,15 @@ function previewCut(){
   if (blue) cutGroup.add(blue);
   $('#ed-cut-red').style.display = red ? '' : 'none';
   $('#ed-cut-blue').style.display = blue ? '' : 'none';
+  $('#ed-cut-red-info').innerHTML = red ? cutFaceInfo(1) : '';
+  $('#ed-cut-blue-info').innerHTML = blue ? cutFaceInfo(-1) : '';
+}
+// La cara nova mira cap a la part eliminada: això diu en quines vistes apareixerà.
+function cutFaceInfo(side){
+  const c = faceClass(norm(planeOf(ED.cutPts).n).map(v => v * side));
+  if (!c) return esc(t('faceNone'));
+  const N = { A: t('vA'), P: t('vP'), F: t('vFs') };
+  return `<i style="display:inline-block;width:10px;height:10px;border-radius:2px;border:1px solid #333;background:${FACE_COLORS[c]}"></i> ${esc(t('faceIn'))} <b>${esc(c.split('').map(k => N[k]).join(' + '))}</b>`;
 }
 function applyCut(side){
   snapshot();
@@ -1123,7 +1219,7 @@ function setMode(m){
   updateHint();
 }
 function updateHint(){
-  let h = ED.mode === 'add' ? t('hintAdd') : ED.mode === 'remove' ? t('hintRemove') : t('hintCut') + (ED.cutPts.length ? ` (${ED.cutPts.length}/3)` : '');
+  let h = ED.mode === 'add' ? t('hintAdd') : ED.mode === 'remove' ? t('hintRemove') : ED.cutBox ? t('hintCut4') : t('hintCut') + (ED.cutPts.length ? ` (${ED.cutPts.length}/3)` : '');
   $('#ed-hint').textContent = h;
 }
 function fillSizeSelects(){
@@ -1232,7 +1328,7 @@ function renderProfiles(){
       <label class="field"><span>${esc(t('teacher'))}</span><input type="text" data-k="teacher" value="${esc(p.teacher)}"></label>
       <label class="field"><span>${esc(t('adminText'))}</span><textarea data-k="admin" rows="2">${esc(p.admin)}</textarea></label>
       <label class="field"><span>${esc(t('defSubject'))}</span><input type="text" data-k="subject" value="${esc(p.subject)}"></label>
-      ${['logoAdmin', 'logoCentre'].map(k => `<div class="field"><span>${esc(t(k))}</span>
+      ${['logoAdmin', 'logoCentre'].map(k => `<div class="field"><span>${esc(t(k))}</span>${k === 'logoAdmin' ? `<small class="muted">${esc(t('logoAdminHint'))}</small>` : ''}
         <label class="logo-drop">${p[k] ? `<img src="${p[k]}" alt="">` : `<span class="muted small">${esc(t('upload'))}</span>`}<input type="file" accept="image/*" data-logo="${k}" hidden></label>
         ${p[k] ? `<button class="btn sm ghost danger" data-rmlogo="${k}">${esc(t('removeImg'))}</button>` : ''}</div>`).join('')}
     </div></div>`).join('');
@@ -1240,6 +1336,32 @@ function renderProfiles(){
 function renderProfileSelect(){
   const act = activeProfile();
   $('#sel-profile').innerHTML = state.profiles.map(p => `<option value="${p.id}" ${act && act.id === p.id ? 'selected' : ''}>${esc(p.centre || '—')}</option>`).join('');
+}
+/* ---------- administració: surt sola segons l'idioma de dalt ---------- */
+const ADMINS = {
+  andalucia: ['Junta de Andalucía', 'andalucia.svg'], aragon: ['Gobierno de Aragón', 'aragon.svg'],
+  asturias: ['Gobierno del Principado de Asturias', 'asturias.svg'], baleares: ['Govern de les Illes Balears', 'baleares.svg'],
+  canarias: ['Gobierno de Canarias', 'canarias.svg'], cantabria: ['Gobierno de Cantabria', 'cantabria.svg'],
+  castillaleon: ['Junta de Castilla y León', 'castillaleon.svg'], castillamancha: ['Junta de Comunidades de Castilla-La Mancha', 'castillamancha.svg'],
+  catalunya: ['Generalitat de Catalunya', 'catalunya.svg'], valencia: ['Generalitat Valenciana', 'valencia.webp'],
+  extremadura: ['Junta de Extremadura', 'extremadura.svg'], galicia: ['Xunta de Galicia', 'galicia.svg'],
+  madrid: ['Comunidad de Madrid', 'madrid.svg'], murcia: ['Región de Murcia', 'murcia.webp'],
+  navarra: ['Gobierno de Navarra', 'navarra.webp'], paisvasco: ['Gobierno Vasco', 'paisvasco.webp'],
+  rioja: ['Gobierno de La Rioja', 'rioja.svg'], ceuta: ['Ciudad Autónoma de Ceuta', 'ceuta.webp'], melilla: ['Ciudad Autónoma de Melilla', 'melilla.svg'],
+};
+const WORDMARKS = ['andalucia', 'aragon', 'baleares', 'canarias', 'cantabria', 'castillaleon', 'catalunya', 'galicia']; // el logo ja porta el nom
+function currentAdmin(){
+  const id = { ca: 'catalunya', gl: 'galicia' }[uiLang] || state.settings.community || 'madrid';
+  const wm = WORDMARKS.includes(id);
+  return { logo: 'logos/' + ADMINS[id][1], text: wm ? '' : ADMINS[id][0] };
+}
+// Un logo pujat al perfil del centre té prioritat sobre l'automàtic.
+const docAdmin = pr => pr.logoAdmin ? { text: pr.admin, logo: pr.logoAdmin } : currentAdmin();
+const logoMM = doc => doc.logoSize ?? 12; // alçada del logo de l'administració
+const communityOptions = sel => Object.entries(ADMINS).map(([id, [name]]) => `<option value="${id}" ${id === sel ? 'selected' : ''}>${esc(name)}</option>`).join('');
+function renderAdmin(){
+  $('#community-wrap').hidden = uiLang !== 'es';
+  $('#sel-community').innerHTML = communityOptions(state.settings.community || 'madrid');
 }
 function newProfile(data = {}){ return { id: uid(), centre: '', teacher: '', admin: '', subject: '', logoAdmin: '', logoCentre: '', ...data }; }
 
@@ -1250,16 +1372,26 @@ let curDoc = null;
 function newDoc(type){
   const pr = activeProfile();
   return { id: uid(), type, title: '', profileId: pr ? pr.id : null, subject: pr ? pr.subject : '', course: '', group: '', term: '', date: '',
-    instructions: '', cell: 7, hidden: false, labels: true, exercises: [], created: Date.now(), updated: Date.now() };
+    instructions: '', cell: 10, exercises: [], created: Date.now(), updated: Date.now() };
 }
-function newExercise(kind){ return { id: uid(), kind, pieces: [], points: 2, statement: '', model: '', missing: 'perfil', showIso: false, lines: 5 }; }
+function newExercise(kind){ return { id: uid(), kind, pieces: [], points: 2, statement: '', model: '', missing: 'perfil', showIso: false, lines: 5, ...EX_OPTS }; }
+// Opcions de dibuix de cada exercici. Els documents antics les tenien al document.
+const EX_OPTS = { guides: false, arrows: true, labels: true, hidden: false, freeColors: true };
+const exOpt = (doc, ex, k) => ex[k] ?? (k.startsWith('name') ? exOpt(doc, ex, 'labels') : doc[k] ?? EX_OPTS[k]);
+const exGap = (doc, ex) => ex.gap ?? doc.cell; // per defecte, una casella
+function exOptsHTML(doc, ex){
+  const views = ex.kind === 'vistas' || ex.kind === 'tercera';
+  const opts = ex.kind === 'teoria' ? [['guides', 'optGuides']] : [['guides', 'optGuides'], ['arrows', 'optArrows'],
+    ...(views ? [['nameA', 'nameA'], ['nameP', 'nameP'], ['nameF', 'nameF'], ['hidden', 'hiddenLines']] : [['freeColors', 'optFreeColors']])];
+  return opts.map(([k, label]) => `<label class="check"><input type="checkbox" data-xf="${k}" ${exOpt(doc, ex, k) ? 'checked' : ''}><span>${esc(t(label))}</span></label>`).join('') +
+    (views ? `<label class="field" style="margin-top:6px"><span>${esc(t('optGap'))}</span><input type="number" data-xf="gap" data-num="1" value="${exGap(doc, ex)}" min="0" max="40"></label>` : '');
+}
 const saveCurDoc = debounce(async () => { if (curDoc) await saveDoc(curDoc); }, 500);
 const refreshPreview = debounce(() => renderPreview(), 250);
 function docChanged(){ saveCurDoc(); refreshPreview(); }
 function openDoc(d){
   curDoc = d;
   $('#doc-none').style.display = 'none'; $('#doc-editor').style.display = '';
-  $('#prev-lang').value = uiLang;
   renderDocForm(); showTab('doc'); renderPreview();
 }
 function pickerHTML(ex, field){
@@ -1271,7 +1403,7 @@ function pickerHTML(ex, field){
 }
 function renderDocForm(){
   const d = curDoc, isExam = d.type === 'examen';
-  const kinds = ['vistas', 'color', 'tercera', 'text'], kName = { vistas: 'kVistas', color: 'kColor', tercera: 'kTercera', text: 'kText' };
+  const kinds = ['vistas', 'color', 'tercera', 'teoria', 'text'], kName = { vistas: 'kVistas', color: 'kColor', tercera: 'kTercera', teoria: 'kTeoria', text: 'kText' };
   $('#doc-form').innerHTML = `
     <div class="field"><span>${esc(t('docType'))}</span><div class="seg"><button data-type="ficha" class="${!isExam ? 'on' : ''}">${esc(t('ficha'))}</button><button data-type="examen" class="${isExam ? 'on' : ''}">${esc(t('examen'))}</button></div></div>
     <label class="field"><span>${esc(t('title'))}</span><input type="text" data-f="title" value="${esc(d.title)}"></label>
@@ -1280,11 +1412,11 @@ function renderDocForm(){
       <label class="field"><span>${esc(t('course'))}</span><input type="text" data-f="course" value="${esc(d.course)}"></label></div>
     <div class="row"><label class="field"><span>${esc(t('group'))}</span><input type="text" data-f="group" value="${esc(d.group)}"></label>
       ${isExam ? `<label class="field"><span>${esc(t('term'))}</span><input type="text" data-f="term" value="${esc(d.term)}"></label>` : ''}</div>
+    <label class="check"><input type="checkbox" data-f="showAdmin" ${d.showAdmin !== false ? 'checked' : ''}><span>${esc(t('showAdmin'))}</span></label>
+    <label class="field"><span>${esc(t('logoSize'))}: <b id="logo-size-val">${logoMM(d)}</b> mm</span><input type="range" data-f="logoSize" data-num="1" min="8" max="24" step="1" value="${logoMM(d)}"></label>
     <label class="field"><span>${esc(t('date'))}</span><input type="date" data-f="date" value="${esc(d.date)}"><small class="muted">${esc(t('dateHint'))}</small></label>
     <label class="field"><span>${esc(t('instructions'))}</span><textarea data-f="instructions" rows="2">${esc(d.instructions)}</textarea></label>
-    <div class="row"><label class="field"><span>${esc(t('gridSize'))}</span><select data-f="cell" data-num="1">${[5, 6, 7, 8, 9, 10].map(c => `<option value="${c}" ${c === d.cell ? 'selected' : ''}>${c} mm</option>`).join('')}</select></label></div>
-    <label class="check"><input type="checkbox" data-f="labels" ${d.labels ? 'checked' : ''}><span>${esc(t('viewLabels'))}</span></label>
-    <label class="check"><input type="checkbox" data-f="hidden" ${d.hidden ? 'checked' : ''}><span>${esc(t('hiddenLines'))}</span></label>
+    <div class="row"><label class="field"><span>${esc(t('gridSize'))}</span><select data-f="cell" data-num="1">${[6, 7, 8, 9, 10, 11, 12].map(c => `<option value="${c}" ${c === d.cell ? 'selected' : ''}>${c} mm</option>`).join('')}</select></label></div>
     <hr class="sep"><h3>${esc(t('exercises'))}</h3>
     <div id="ex-list">${d.exercises.map((ex, i) => `
       <div class="excard" data-ex="${ex.id}">
@@ -1295,10 +1427,11 @@ function renderDocForm(){
         </div>
         <label class="field"><span>${esc(t('statement'))}</span><textarea data-xf="statement" rows="2" placeholder="${esc(t('statementPh'))}">${esc(ex.statement)}</textarea></label>
         ${ex.kind === 'text' ? `<label class="field"><span>${esc(t('lines'))}</span><input type="number" data-xf="lines" data-num="1" value="${ex.lines}" min="0" max="30"></label>` : `
-          ${ex.kind === 'color' ? `<label class="field"><span>${esc(t('modelPiece'))}</span><select data-xf="model"><option value="">${esc(t('none'))}</option>${state.pieces.map(p => `<option value="${p.id}" ${p.id === ex.model ? 'selected' : ''}>${esc(p.name)}</option>`).join('')}</select></label>` : ''}
+          ${ex.kind === 'color' && !exOpt(d, ex, 'freeColors') ? `<label class="field"><span>${esc(t('modelPiece'))}</span><select data-xf="model"><option value="">${esc(t('none'))}</option>${state.pieces.map(p => `<option value="${p.id}" ${p.id === ex.model ? 'selected' : ''}>${esc(p.name)}</option>`).join('')}</select></label>` : ''}
           ${ex.kind === 'tercera' ? `<div class="row"><label class="field"><span>${esc(t('missingView'))}</span><select data-xf="missing">${['alzado', 'planta', 'perfil'].map(v => `<option value="${v}" ${v === ex.missing ? 'selected' : ''}>${esc(t({ alzado: 'vA', planta: 'vP', perfil: 'vF' }[v]))}</option>`).join('')}</select></label></div>
             <label class="check"><input type="checkbox" data-xf="showIso" ${ex.showIso ? 'checked' : ''}><span>${esc(t('showIso'))}</span></label>` : ''}
-          <div class="field"><span>${esc(t('choosePieces'))}</span>${pickerHTML(ex)}</div>`}
+          <div class="field"><span>${esc(t(ex.kind === 'teoria' ? 'pieceOptional' : 'choosePieces'))}</span>${pickerHTML(ex)}</div>
+          ${exOptsHTML(d, ex)}`}
       </div>`).join('')}</div>
     <div class="toolbar"><select id="add-kind" style="width:auto">${kinds.map(k => `<option value="${k}">${esc(t(kName[k]))}</option>`).join('')}</select><button class="btn" id="btn-add-ex">＋ ${esc(t('addEx'))}</button></div>`;
 }
@@ -1306,12 +1439,15 @@ function bindDocForm(){
   const form = $('#doc-form');
   form.addEventListener('input', e => {
     const el = e.target; if (!curDoc) return;
-    if (el.dataset.f){ curDoc[el.dataset.f] = el.type === 'checkbox' ? el.checked : el.dataset.num ? +el.value : el.value; docChanged(); }
+    if (el.dataset.f){
+      curDoc[el.dataset.f] = el.type === 'checkbox' ? el.checked : el.dataset.num ? +el.value : el.value; docChanged();
+      if (el.dataset.f === 'logoSize') $('#logo-size-val').textContent = el.value;
+    }
     else if (el.dataset.xf){
       const ex = curDoc.exercises.find(x => x.id === el.closest('[data-ex]').dataset.ex);
       const v = el.type === 'checkbox' ? el.checked : el.dataset.num ? +el.value : el.value;
       ex[el.dataset.xf] = v; docChanged();
-      if (el.dataset.xf === 'kind') renderDocForm();
+      if (el.dataset.xf === 'kind' || el.dataset.xf === 'freeColors') renderDocForm();
     }
   });
   form.addEventListener('click', e => {
@@ -1322,7 +1458,7 @@ function bindDocForm(){
     const card = e.target.closest('[data-ex]'); if (!card) return;
     const idx = curDoc.exercises.findIndex(x => x.id === card.dataset.ex), ex = curDoc.exercises[idx];
     const pp = e.target.closest('[data-pp]');
-    if (pp){ const i = ex.pieces.indexOf(pp.dataset.pp); if (i >= 0) ex.pieces.splice(i, 1); else ex.pieces.push(pp.dataset.pp);
+    if (pp){ const i = ex.pieces.indexOf(pp.dataset.pp); if (i >= 0) ex.pieces.splice(i, 1); else if (ex.kind === 'teoria') ex.pieces = [pp.dataset.pp]; else ex.pieces.push(pp.dataset.pp);
       card.querySelector('.pick').outerHTML = pickerHTML(ex); docChanged(); return; }
     const mv = e.target.closest('[data-mv]');
     if (mv){ const j = idx + +mv.dataset.mv; if (j < 0 || j >= curDoc.exercises.length) return; [curDoc.exercises[idx], curDoc.exercises[j]] = [curDoc.exercises[j], curDoc.exercises[idx]]; renderDocForm(); docChanged(); return; }
@@ -1333,20 +1469,20 @@ function bindDocForm(){
 /* ---------- construcció de pàgines ---------- */
 const DATE_LOC = { ca: 'ca-ES', es: 'es-ES', gl: 'gl-ES' };
 function longDate(iso, l){ if (!iso) return ''; const [y, m, d] = iso.split('-').map(Number); return new Date(y, m - 1, d).toLocaleDateString(DATE_LOC[l], { day: 'numeric', month: 'long', year: 'numeric' }); }
-function legendHTML(l, compact){
+function legendHTML(l, compact, blank){
   const N = { A: t('vA', l), P: t('vP', l), F: t('vFs', l) };
   const label = k => k.split('').map(c => N[c]).join(' + ');
-  return `<div class="legend">${CLASS_ORDER.map(k => `<div class="sw"><i style="background:${FACE_COLORS[k]}${compact ? ';width:14px;height:10px;border:1px solid #333;display:inline-block;border-radius:2px' : ''}"></i>${esc(label(k))}</div>`).join('')}</div>`;
+  return `<div class="legend">${CLASS_ORDER.map(k => `<div class="sw"><i style="background:${blank ? '#fff' : FACE_COLORS[k]}${compact ? ';width:14px;height:10px;border:1px solid #333;display:inline-block;border-radius:2px' : ''}"></i>${esc(label(k))}</div>`).join('')}</div>`;
 }
 function fieldHTML(label, value, grow){ return `<div class="f" style="${grow ? 'flex:1' : 'max-width:45mm'}"><b>${esc(label)}:</b><span class="ln">${esc(value || '')}</span></div>`; }
 function headerHTML(doc, l, sol, model){
-  const pr = profileById(doc.profileId) || activeProfile() || newProfile();
+  const pr = profileById(doc.profileId) || activeProfile() || newProfile(), admin = docAdmin(pr), showAdmin = doc.showAdmin !== false;
   const title = doc.title || t(doc.type === 'examen' ? 'examen' : 'ficha', l);
   const date = longDate(doc.date, l);
   if (doc.type === 'examen'){
     return `<div class="doc-hdr">
       <div class="top">
-        <div class="side">${pr.logoAdmin ? `<img src="${pr.logoAdmin}" alt="">` : ''}<div class="txt">${esc(pr.admin)}</div></div>
+        <div class="side">${showAdmin ? `<img class="adm" style="height:${logoMM(doc)}mm" src="${admin.logo}" alt=""><div class="txt">${esc(admin.text)}</div>` : ''}</div>
         <div class="side right">${pr.logoCentre ? `<img src="${pr.logoCentre}" alt="">` : ''}<div class="txt"><div class="cname">${esc(pr.centre)}</div>${esc(pr.teacher)}</div></div>
       </div>
       <div class="mid"><div class="fields">
@@ -1358,14 +1494,16 @@ function headerHTML(doc, l, sol, model){
     </div>`;
   }
   return `<div class="fitxa-hdr">
+    ${showAdmin ? `<img class="adm" style="height:${logoMM(doc)}mm" src="${admin.logo}" alt="">` : ''}
     ${pr.logoCentre ? `<img src="${pr.logoCentre}" alt="">` : ''}
     <div class="tt"><h1>${esc(title)} ${sol ? `<span class="doc-hdr"><span class="solbadge" style="font-size:8pt;vertical-align:middle">${esc(t('dSolution', l))}</span></span>` : ''}</h1><div class="sub">${esc([pr.centre, doc.subject, doc.course].filter(Boolean).join(' · '))}</div></div>
     <div class="fs">${fieldHTML(t('dName', l), '', true)}<div class="frow" style="display:flex;gap:4mm">${fieldHTML(t('group', l), doc.group)}${fieldHTML(t('date', l), date, true)}</div></div>
   </div>`;
 }
 const CONTENT_W = 182; // mm (A4 − marges)
+const DEFAULT_PIECE = { N: 3, H: 3, cuts: [], cubes: [[0,0,0],[1,0,0],[2,0,0],[0,1,0],[1,1,0],[2,1,0],[0,2,0],[0,1,1],[0,2,1],[1,2,0],[0,2,2]] };
 function stmtHTML(doc, ex, i, l){
-  const def = { vistas: 'stVistas', color: 'stColor', tercera: 'stTercera' }[ex.kind];
+  const def = { vistas: 'stVistas', color: exOpt(doc, ex, 'freeColors') ? 'stColorFree' : 'stColor', tercera: 'stTercera', teoria: 'stTeoria' }[ex.kind];
   const txt = ex.statement || (def ? t(def, l) : '');
   const pts = doc.type === 'examen' && ex.points ? `<span class="pts">(${String(ex.points).replace('.', ',')} ${t(ex.points == 1 ? 'dPt' : 'dPts', l)})</span>` : '';
   return `<div class="ex-st"><span class="num">${i + 1}.</span><span class="txt">${esc(txt).replace(/\n/g, '<br>')}</span>${pts}</div>`;
@@ -1373,26 +1511,36 @@ function stmtHTML(doc, ex, i, l){
 function pieceFor(id, model){ const p = pieceById(id); if (!p) return null; return model === 'B' ? rotatePiece(clone(p)) : p; }
 function exItems(doc, ex, l, sol, model){
   const items = [], letter = i => String.fromCharCode(97 + i) + ')';
+  const figOpts = { arrows: exOpt(doc, ex, 'arrows'), guides: exOpt(doc, ex, 'guides') };
   const geos = ex.pieces.map(id => getGeo(pieceFor(id, model))).filter(Boolean);
   if (ex.kind === 'vistas' || ex.kind === 'tercera'){
     geos.forEach((g, i) => {
       const { nx, ny, nz } = dims(g);
-      const W = nx + ny + 3, H = nz + ny + 3;
       const showIso = ex.kind === 'vistas' || ex.showIso;
       const maxGridW = showIso ? 112 : CONTENT_W - 10;
-      const cell = Math.min(doc.cell, maxGridW / W, 120 / H);
+      const gapMM = exGap(doc, ex);
+      const cell = Math.min(doc.cell, (maxGridW - gapMM) / (nx + ny), (120 - gapMM) / (nz + ny));
       const show = ex.kind === 'vistas' ? { alzado: sol, planta: sol, perfil: sol } : { alzado: sol || ex.missing !== 'alzado', planta: sol || ex.missing !== 'planta', perfil: sol || ex.missing !== 'perfil' };
-      const grid = gridSVG(g, { cell, show, labels: doc.labels || ex.kind === 'tercera', lang: l, hidden: sol && doc.hidden, missing: ex.kind === 'tercera' && !sol ? ex.missing : null });
-      const iso = showIso ? isoSVG(g, { fill: 'white', arrows: true, lang: l, maxW: CONTENT_W - grid.wmm - 14, maxH: Math.max(grid.hmm, 45), maxScale: 11 }) : null;
+      const grid = gridSVG(g, { cell, show, gapMM, names: { alzado: exOpt(doc, ex, 'nameA'), planta: exOpt(doc, ex, 'nameP'), perfil: exOpt(doc, ex, 'nameF') }, lang: l, hidden: sol && exOpt(doc, ex, 'hidden'), missing: ex.kind === 'tercera' && !sol ? ex.missing : null });
+      // l'aresta d'un cub dibuixada mesura el mateix que una casella (en isomètrica una aresta fa 0,816 unitats)
+      const iso = showIso ? isoSVG(g, { fill: 'white', ...figOpts, lang: l, maxW: CONTENT_W - grid.wmm - 14, maxH: 110, maxScale: cell / 0.8165 }) : null;
       items.push(`<div class="prow"><span class="lbl">${letter(i)}</span>${iso ? `<div class="iso">${iso.svg}</div>` : ''}<div class="grid">${grid.svg}</div></div>`);
     });
   } else if (ex.kind === 'color'){
-    const mp = ex.model && getGeo(pieceFor(ex.model, model));
-    if (mp) items.push(`<div class="modelrow"><div>${isoSVG(mp, { fill: 'color', arrows: true, lang: l, maxW: 80, maxH: 58, maxScale: 9 }).svg}</div>${legendHTML(l)}</div>`);
-    else items.push(`<div class="modelrow">${legendHTML(l)}</div>`);
+    // si l'alumnat tria els colors no hi ha peça model: en donaria uns de fets
+    const free = exOpt(doc, ex, 'freeColors');
+    const mp = !free && ex.model && getGeo(pieceFor(ex.model, model));
+    if (mp) items.push(`<div class="modelrow"><div>${isoSVG(mp, { fill: 'color', ...figOpts, lang: l, maxW: 80, maxH: 58, maxScale: 9 }).svg}</div>${legendHTML(l)}</div>`);
+    else items.push(`<div class="modelrow">${legendHTML(l, false, free && !sol)}</div>`);
     for (let i = 0; i < geos.length; i += 2){
-      items.push(`<div class="pairs">${[0, 1].map(k => geos[i + k] ? `<div class="cell"><span class="lbl" style="font-weight:700">${letter(i + k)}</span>${isoSVG(geos[i + k], { fill: sol ? 'color' : 'white', arrows: true, lang: l, maxW: 82, maxH: 70, maxScale: 10 }).svg}</div>` : '<div></div>').join('')}</div>`);
+      items.push(`<div class="pairs">${[0, 1].map(k => geos[i + k] ? `<div class="cell"><span class="lbl" style="font-weight:700">${letter(i + k)}</span>${isoSVG(geos[i + k], { fill: sol ? 'color' : 'white', ...figOpts, lang: l, maxW: 82, maxH: 70, maxScale: 10 }).svg}</div>` : '<div></div>').join('')}</div>`);
     }
+  } else if (ex.kind === 'teoria'){
+    const g = geos[0] || getGeo(model === 'B' ? rotatePiece(clone(DEFAULT_PIECE)) : DEFAULT_PIECE);
+    const rows = [['vA', 'ansAfrom', 'ansAwhere'], ['vP', 'ansPfrom', 'ansPwhere'], ['vF', 'ansFfrom', 'ansFwhere']];
+    items.push(`<div class="teo"><div>${isoSVG(g, { fill: 'white', arrows: true, letters: true, guides: figOpts.guides, lang: l, maxW: 66, maxH: 70, maxScale: 9 }).svg}</div><table>
+      <tr><th>${esc(t('thView', l))}</th><th>${esc(t('thFrom', l))}</th><th>${esc(t('thWhere', l))}</th></tr>
+      ${rows.map(([v, a, b]) => `<tr><td><b>${esc(t(v, l))}</b></td><td>${sol ? esc(t(a, l)) : ''}</td><td>${sol ? esc(t(b, l)) : ''}</td></tr>`).join('')}</table></div>`);
   } else if (ex.kind === 'text'){
     items.push(`<div class="lines">${'<div></div>'.repeat(Math.max(0, ex.lines | 0))}</div>`);
   }
@@ -1439,7 +1587,7 @@ function paginate(doc, l, sol, model){
 function renderPreview(){
   if (!curDoc || !MF) return;
   const box = $('#doc-preview');
-  const l = $('#prev-lang').value, sol = $('#prev-mode').value === 'sol';
+  const l = uiLang, sol = $('#prev-mode').value === 'sol';
   const pages = paginate(curDoc, l, sol, null);
   box.innerHTML = '';
   const avail = $('#doc-preview-wrap').clientWidth - 40;
@@ -1447,7 +1595,7 @@ function renderPreview(){
   pages.forEach(p => box.appendChild(p));
 }
 function exportPDF(){
-  const l = $('#exp-lang').value, content = $('#exp-content').value, isExam = curDoc.type === 'examen';
+  const l = uiLang, content = $('#exp-content').value, isExam = curDoc.type === 'examen';
   const models = isExam ? ($('#exp-modelb').checked ? ['A', 'B'] : ['A']) : [null];
   const showModel = isExam && models.length > 1 ? m => m : () => null;
   const root = $('#print-root'); root.innerHTML = '';
@@ -1492,13 +1640,14 @@ function showTab(name){
   if (name === 'doc' && curDoc){ renderDocForm(); renderPreview(); }
 }
 function renderAll(){
-  applyI18n(); renderProfileSelect(); renderDocs(); renderPieces(); renderProfiles();
+  applyI18n(); renderAdmin(); renderProfileSelect(); renderDocs(); renderPieces(); renderProfiles();
   if (curDoc){ renderDocForm(); renderPreview(); }
   if (ED.piece){ updateHint(); buildFloor(); renderMiniViews(); renderCutList(); }
 }
 function bindUI(){
   $('#tabs').onclick = e => { const b = e.target.closest('[data-tab]'); if (b) showTab(b.dataset.tab); };
   $('#sel-lang').onchange = async e => { uiLang = e.target.value; state.settings.uiLang = uiLang; await saveSettings(); renderAll(); };
+  $('#sel-community').onchange = async e => { state.settings.community = e.target.value; await saveSettings(); renderAdmin(); if (curDoc) renderPreview(); };
   $('#sel-profile').onchange = async e => { state.settings.activeProfile = e.target.value; await saveSettings(); renderProfiles(); };
   $('#btn-new-fitxa').onclick = async () => { const d = newDoc('ficha'); await saveDoc(d); renderDocs(); openDoc(d); };
   $('#btn-new-exam').onclick = async () => { const d = newDoc('examen'); await saveDoc(d); renderDocs(); openDoc(d); };
@@ -1537,8 +1686,8 @@ function bindUI(){
   $('#btn-export-data').onclick = exportData;
   $('#inp-import').onchange = e => { if (e.target.files[0]) importData(e.target.files[0]); e.target.value = ''; };
   $('#btn-samples').onclick = async () => { for (const p of samplePieces()) await savePiece(p); renderPieces(); toast(t('samplesOk')); };
-  $('#prev-mode').onchange = renderPreview; $('#prev-lang').onchange = renderPreview;
-  $('#btn-export').onclick = () => { $('#exp-lang').value = $('#prev-lang').value; $('#exp-modelb-wrap').style.display = curDoc.type === 'examen' ? '' : 'none'; $('#dlg-export').showModal(); };
+  $('#prev-mode').onchange = renderPreview;
+  $('#btn-export').onclick = () => { $('#exp-modelb-wrap').style.display = curDoc.type === 'examen' ? '' : 'none'; $('#dlg-export').showModal(); };
   $('#exp-cancel').onclick = () => $('#dlg-export').close();
   $('#exp-go').onclick = () => { $('#dlg-export').close(); exportPDF(); };
   window.addEventListener('afterprint', () => { $('#print-root').innerHTML = ''; });
@@ -1550,10 +1699,14 @@ async function welcome(){
   return new Promise(res => {
     const dlg = $('#dlg-welcome');
     $('#wel-lang').value = uiLang;
-    $('#wel-lang').onchange = e => { uiLang = e.target.value; applyI18n(); };
+    const showCommunity = () => { $('#wel-community-wrap').hidden = uiLang !== 'es'; };
+    $('#wel-community').innerHTML = communityOptions('madrid');
+    showCommunity();
+    $('#wel-lang').onchange = e => { uiLang = e.target.value; applyI18n(); showCommunity(); };
     dlg.addEventListener('cancel', e => e.preventDefault());
     $('#wel-go').onclick = async () => {
-      const p = newProfile({ teacher: $('#wel-teacher').value.trim(), centre: $('#wel-centre').value.trim(), admin: $('#wel-admin').value.trim() });
+      const p = newProfile({ teacher: $('#wel-teacher').value.trim(), centre: $('#wel-centre').value.trim() });
+      state.settings.community = $('#wel-community').value;
       await saveProfile(p);
       state.settings.activeProfile = p.id; state.settings.uiLang = uiLang; await saveSettings();
       for (const s of samplePieces()) await savePiece(s);

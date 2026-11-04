@@ -5,16 +5,16 @@
 Web per crear peces 3D (cubs + talls inclinats) i generar fitxes i exàmens de vistes
 (alçat, planta i perfil esquerre, sistema europeu) en català, castellà i gallec.
 
-Tot és en un sol fitxer: `index.html`. No cal instal·lar res.
+La web és `index.html` més la carpeta `logos`. No cal instal·lar res.
 
 ## Publicar-la a GitHub Pages
 
 1. Crea un repositori nou a GitHub (per exemple `vistes`), públic.
-2. Puja-hi el fitxer `index.html` (botó **Add file → Upload files**).
+2. Puja-hi el fitxer `index.html` i la carpeta `logos` (botó **Add file → Upload files**).
 3. Ves a **Settings → Pages**. A *Branch* tria `main` i la carpeta `/ (root)` i desa.
 4. Al cap d'un minut la web estarà a `https://EL-TEU-USUARI.github.io/vistes/`.
 
-Per actualitzar-la, torna a pujar `index.html` i substitueix l'anterior.
+Per actualitzar-la, torna a pujar els fitxers que hagin canviat i substitueix els anteriors.
 
 ## On es guarden les dades
 
